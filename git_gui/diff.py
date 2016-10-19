@@ -19,16 +19,16 @@ import hashlib
 
 from gi.repository import Gtk
 
-from aipoed import CmdFailure
-from aipoed import utils
-from aipoed import runext
+from ..lib import CmdFailure
+from ..lib import utils
+from ..lib import runext
 
-from aipoed.patch_diff.gui import diff
+from ..patch_diff.gui import diff
 
-from aipoed.gui import dialogue
-from aipoed.gui import gutils
-from aipoed.gui import actions
-from aipoed.gui import icons
+from ..gui import dialogue
+from ..gui import gutils
+from ..gui import actions
+from ..gui import icons
 
 class WdDiffTextWidget(diff.DiffTextsWidget, diff.FileAndRefreshActions):
     DIFF_MODES = ["git diff", "git diff --staged", "git diff HEAD"]
@@ -84,7 +84,7 @@ class WdDiffTextDialog(dialogue.ListenerDialog):
     def _close_cb(self, dialog, response_id):
         dialog.destroy()
 
-from aipoed.scm.gui.actions import AC_IN_SCM_PGND
+from ..scm_gui.actions import AC_IN_SCM_PGND
 
 actions.CLASS_INDEP_AGS[AC_IN_SCM_PGND].add_actions(
     [

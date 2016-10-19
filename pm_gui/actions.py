@@ -17,17 +17,19 @@
 Workspace status action groups
 '''
 
-from aipoed import enotify
-from aipoed import pm
+from .. import pm
+from .. import pm_gui
 
-from aipoed.gui import actions
+from ..lib import enotify
+
+from ..gui import actions
 
 AC_NOT_IN_PM_PGND, AC_IN_PM_PGND, AC_IN_PM_PGND_MUTABLE, AC_IN_PM_PGND_MASK = actions.ActionCondns.new_flags_and_mask(3)
 AC_NOT_PMIC, AC_PMIC, AC_PMIC_MASK = actions.ActionCondns.new_flags_and_mask(2)
 
 def get_in_pm_pgnd_condns():
-    if pm.gui.ifce.PM.in_valid_pgnd:
-        if pm.gui.ifce.PM.pgnd_is_mutable:
+    if pm_gui.ifce.PM.in_valid_pgnd:
+        if pm_gui.ifce.PM.pgnd_is_mutable:
             conds = AC_IN_PM_PGND | AC_IN_PM_PGND_MUTABLE
         else:
             conds = AC_IN_PM_PGND
@@ -36,7 +38,7 @@ def get_in_pm_pgnd_condns():
     return actions.MaskedCondns(conds, AC_IN_PM_PGND_MASK)
 
 def get_pmic_condns():
-    return actions.MaskedCondns(AC_PMIC if pm.gui.ifce.PM.is_poppable else AC_NOT_PMIC, AC_PMIC_MASK)
+    return actions.MaskedCondns(AC_PMIC if pm_gui.ifce.PM.is_poppable else AC_NOT_PMIC, AC_PMIC_MASK)
 
 def _update_class_indep_pm_pgnd_cb(**kwargs):
     condns = get_in_pm_pgnd_condns()

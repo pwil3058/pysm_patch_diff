@@ -17,7 +17,7 @@
 
 import os
 
-from aipoed.gui import apath
+from ..gui import apath
 
 _APP_NAME = None
 
@@ -45,7 +45,7 @@ def add_workspace_path(path):
     return WorkspacePathView.append_saved_path(path)
 
 def chdir(newdir):
-    from aipoed import CmdResult
+    from ..lib import CmdResult
     events = 0
     try:
         os.chdir(newdir)
@@ -57,19 +57,19 @@ def chdir(newdir):
         retval = CmdResult.error(stderr="{0}: \"{1}\" : {2}".format(ecode, newdir, emsg))
         newdir = os.getcwd()
     # NB regardless of success of os.chdir() we need to check the interfaces
-    from aipoed import enotify
-    from aipoed import options
-    from aipoed.gui.console import LOG
-    from aipoed.scm.gui import ifce as scm_ifce
+    from ..lib import enotify
+    from ..lib import options
+    from ..gui.console import LOG
+    from ..scm_gui import ifce as scm_ifce
     scm_ifce.get_ifce()
     if scm_ifce.SCM.in_valid_pgnd:
         # move down to the root dir
         newdir = scm_ifce.SCM.get_playground_root()
         os.chdir(newdir)
-        from aipoed.gui import recollect
+        from ..gui import recollect
         WorkspacePathView.append_saved_path(newdir)
         recollect.set("workspace", "last_used", newdir)
-    from aipoed.pm.gui import ifce as pm_ifce
+    from ..pm_gui import ifce as pm_ifce
     pm_ifce.get_ifce()
     options.reload_pgnd_options()
     CURDIR = os.getcwd()

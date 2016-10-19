@@ -17,8 +17,8 @@
 
 from gi.repository import Gtk
 
-from aipoed.gui import textview
-from aipoed.patch_diff.gui import diff
+from ..gui import textview
+from ..patch_diff.gui import diff
 
 def _framed(label, widget):
     frame = Gtk.Frame(label=label)

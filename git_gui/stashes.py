@@ -20,23 +20,23 @@ from gi.repository import Gdk
 from gi.repository import Gtk
 from gi.repository import GObject
 
-from aipoed import enotify
-from aipoed import CmdFailure
-from aipoed import runext
-from aipoed import scm
-from aipoed import utils
+from ..lib import enotify
+from ..lib import CmdFailure
+from ..lib import runext
+from ..lib import scm
+from ..lib import utils
 
-from aipoed.gui import actions
-from aipoed.gui import dialogue
-from aipoed.gui import table
-from aipoed.gui import text_edit
-from aipoed.gui import icons
+from ..gui import actions
+from ..gui import dialogue
+from ..gui import table
+from ..gui import text_edit
+from ..gui import icons
 
-from aipoed.patch_diff.gui import diff
+from ..patch_diff.gui import diff
 
-from aipoed import utils
+from ..lib import utils
 
-from aipoed.git.gui import ifce
+from ..git_gui import ifce
 
 StashListRow = collections.namedtuple("StashListRow",    ["name", "branch", "commit"])
 
@@ -53,7 +53,7 @@ class StashTableData(table.TableData):
             m = self.RE.match(line)
             yield StashListRow(*m.groups())
 
-class StashListView(table.MapManagedTableView, scm.gui.actions.WDListenerMixin):
+class StashListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
     class MODEL(table.MapManagedTableView.MODEL):
         ROW = StashListRow
         TYPES = ROW(name=GObject.TYPE_STRING, branch=GObject.TYPE_STRING, commit=GObject.TYPE_STRING,)
@@ -85,7 +85,7 @@ class StashListView(table.MapManagedTableView, scm.gui.actions.WDListenerMixin):
     SPECIFICATION = table.simple_text_specification(MODEL, (_("Name"), "name", 0.0), (_("Branch"), "branch", 0.0), (_("Commit"), "commit", 0.0),)
     def __init__(self, size_req=None):
         table.MapManagedTableView.__init__(self, size_req=size_req)
-        scm.gui.actions.WDListenerMixin.__init__(self)
+        scm_gui.actions.WDListenerMixin.__init__(self)
         self.set_contents()
     def populate_action_groups(self):
         self.action_groups[actions.AC_SELN_UNIQUE].add_actions(
@@ -231,7 +231,7 @@ def drop_named_stash(stash):
             result = ifce.SCM.do_stash_drop(stash=stash)
         dialogue.main_window.report_any_problems(result)
 
-actions.CLASS_INDEP_AGS[scm.gui.actions.AC_IN_SCM_PGND].add_actions(
+actions.CLASS_INDEP_AGS[scm_gui.actions.AC_IN_SCM_PGND].add_actions(
     [
         ("git_stash_current_state", icons.STOCK_STASH_SAVE, _("Save"), None,
          _("Stash the current state."),

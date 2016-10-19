@@ -20,17 +20,17 @@ import shutil
 from gi.repository import Gtk
 from gi.repository import GObject
 
-from aipoed import scm
-from aipoed import utils
+from ..lib import scm
+from ..lib import utils
 
-from aipoed.gui import actions
-from aipoed.gui import dialogue
-from aipoed.gui import file_tree
-from aipoed.gui import icons
+from ..gui import actions
+from ..gui import dialogue
+from ..gui import file_tree
+from ..gui import icons
 
-from aipoed import enotify
+from ..lib import enotify
 
-from aipoed.git.gui import ifce
+from ..git_gui import ifce
 
 class IndexFileTreeModel(file_tree.FileTreeModel):
     REPOPULATE_EVENTS = scm.E_CHECKOUT|enotify.E_CHANGE_WD
@@ -40,7 +40,7 @@ class IndexFileTreeModel(file_tree.FileTreeModel):
     def _get_file_db():
         return ifce.SCM.get_index_file_db()
 
-class IndexFileTreeView(file_tree.FileTreeView, enotify.Listener, scm.gui.actions.WDListenerMixin, dialogue.ClientMixin):
+class IndexFileTreeView(file_tree.FileTreeView, enotify.Listener, scm_gui.actions.WDListenerMixin, dialogue.ClientMixin):
     MODEL = IndexFileTreeModel
     UI_DESCR = '''
     <ui>
@@ -71,13 +71,13 @@ class IndexFileTreeView(file_tree.FileTreeView, enotify.Listener, scm.gui.action
     def __init__(self, hide_clean=False, **kwargs):
         file_tree.FileTreeView.__init__(self, hide_clean=hide_clean)
         enotify.Listener.__init__(self)
-        scm.gui.actions.WDListenerMixin.__init__(self)
+        scm_gui.actions.WDListenerMixin.__init__(self)
     def populate_action_groups(self):
         self.action_groups[actions.AC_DONT_CARE].add_actions(
             [
                 ('index_files_menu_files', None, _('Staged _Files')),
             ])
-        self.action_groups[scm.gui.actions.AC_IN_SCM_PGND|actions.AC_SELN_MADE].add_actions(
+        self.action_groups[scm_gui.actions.AC_IN_SCM_PGND|actions.AC_SELN_MADE].add_actions(
             [
                 ('index_unstage_selected_files', Gtk.STOCK_REMOVE, _('_Unstage'), None,
                  _('Remove/unstage the selected files/directories from the index'), self.unstage_selected_files_acb),

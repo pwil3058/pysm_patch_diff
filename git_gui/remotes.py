@@ -21,16 +21,16 @@ from gi.repository import Gdk
 from gi.repository import Gtk
 from gi.repository import GObject
 
-from aipoed import enotify
-from aipoed import runext
-from aipoed import scm
-from aipoed import utils
+from ..lib import enotify
+from ..lib import runext
+from ..lib import scm
+from ..lib import utils
 
-from aipoed.gui import actions
-from aipoed.gui import dialogue
-from aipoed.gui import gutils
-from aipoed.gui import icons
-from aipoed.gui import table
+from ..gui import actions
+from ..gui import dialogue
+from ..gui import gutils
+from ..gui import icons
+from ..gui import table
 
 RemotesListRow = collections.namedtuple("RemotesListRow",    ["name", "inbound_url", "outbound_url"])
 
@@ -51,7 +51,7 @@ class RemoteRepoTableData(table.TableData):
                 assert name == m.group(1)
                 yield RemotesListRow(name=name, inbound_url=inbound_url, outbound_url=m.group(2))
 
-class RemotesListView(table.MapManagedTableView, scm.gui.actions.WDListenerMixin):
+class RemotesListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
     class MODEL(table.MapManagedTableView.MODEL):
         ROW = RemotesListRow
         TYPES = ROW(name=GObject.TYPE_STRING, inbound_url=GObject.TYPE_STRING, outbound_url=GObject.TYPE_STRING,)
@@ -75,7 +75,7 @@ class RemotesListView(table.MapManagedTableView, scm.gui.actions.WDListenerMixin
     SPECIFICATION = table.simple_text_specification(MODEL, (_("Name"), "name", 0.0), (_("Inbound URL"), "inbound_url", 0.0), (_("Outbound URL"), "outbound_url", 0.0))
     def __init__(self, size_req=None):
         table.MapManagedTableView.__init__(self, size_req=size_req)
-        scm.gui.actions.WDListenerMixin.__init__(self)
+        scm_gui.actions.WDListenerMixin.__init__(self)
         self.set_contents()
     def get_selected_remote(self):
         store, selection = self.get_selection().get_selected_rows()
@@ -209,7 +209,7 @@ class FetchWidget(Gtk.VBox):
     def flag_is_active(self, flag_label):
         return self._flag_btns.flag_is_active(flag_label)
     def do_fetch(self):
-        from aipoed.git.gui import ifce
+        from ..git_gui import ifce
         cmd = ["git", "fetch"] + self._flag_btns.get_active_flags()
         if "--all" not in cmd:
             remote = self._remote.get_active_text()
@@ -240,7 +240,7 @@ class FetchDialog(dialogue.CancelOKDialog, dialogue.ClientMixin):
         else:
             self.destroy()
 
-actions.CLASS_INDEP_AGS[scm.gui.actions.AC_IN_SCM_PGND].add_actions(
+actions.CLASS_INDEP_AGS[scm_gui.actions.AC_IN_SCM_PGND].add_actions(
     [
         ("git_fetch_from_remote", icons.STOCK_FETCH, _("Fetch"), None,
          _("Fetch from a selected remote repository"),

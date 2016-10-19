@@ -24,21 +24,21 @@ import errno
 
 from gi.repository import Pango
 
-from aipoed import CmdResult
-from aipoed import runext
-from aipoed import enotify
-from aipoed import scm
-from aipoed import utils
+from ..lib import CmdResult
+from ..lib import runext
+from ..lib import enotify
+from ..lib import scm
+from ..lib import utils
 
-from aipoed.decorators import singleton
-from aipoed.patch_diff import patchlib
+from ..decorators import singleton
+from ..patch_diff import patchlib
 
-from aipoed.gui import table
+from ..gui import table
 
-from aipoed.git.gui import fsdb_git
+from ..git_gui import fsdb_git
 
 def do_action_cmd(cmd, success_emask, fail_emask, eflag_modifiers):
-    from aipoed.gui import console
+    from ..gui import console
     # TODO: improve do_action_cmd() and move to runext
     result = runext.run_cmd_in_console(console.LOG, cmd)
     # Because git uses stderr to report progress etc we should consider
@@ -260,7 +260,7 @@ class Interface:
         return runext.run_get_cmd(["git", "cat-file", "blob", "HEAD:{}".format(file_path)], do_rstrip=False, default=None, decode_stdout=False)
     @staticmethod
     def get_log_table_data():
-        from aipoed.git.gui import log
+        from ..git_gui import log
         return log.LogTableData()
     @staticmethod
     def get_commit_message(commit=None):
@@ -308,7 +308,7 @@ class Interface:
                     break
         return None
     def get_remotes_table_data():
-        from aipoed.git.gui import remotes
+        from ..git_gui import remotes
         return remote.RemoteRepoTableData()
     @staticmethod
     def get_revision(filepath=None):
@@ -321,11 +321,11 @@ class Interface:
         return runext.run_get_cmd(["git", "stash", "show", "-p"] + runext.OPTNL_ARG(stash), default="", do_rstrip=False)
     @staticmethod
     def get_stashes_table_data():
-        from aipoed.git.gui import stashes
+        from ..git_gui import stashes
         return stashes.StashTableData()
     @staticmethod
     def get_tags_table_data():
-        from aipoed.git.gui import tags
+        from ..git_gui import tags
         return tags.TagTableData()
     @staticmethod
     def get_wd_file_db():
@@ -345,5 +345,5 @@ def index_is_empty():
     return True
 
 SCM = Interface()
-from aipoed.scm.gui import ifce as scm_ifce
+from ..scm_gui import ifce as scm_ifce
 scm_ifce.add_back_end(SCM)

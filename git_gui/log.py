@@ -19,17 +19,17 @@ from gi.repository import Gdk
 from gi.repository import Gtk
 from gi.repository import GObject
 
-from aipoed import enotify
-from aipoed import runext
-from aipoed import scm
-from aipoed import utils
+from ..lib import enotify
+from ..lib import runext
+from ..lib import scm
+from ..lib import utils
 
-from aipoed.gui import actions
-from aipoed.gui import table
-from aipoed.gui import icons
+from ..gui import actions
+from ..gui import table
+from ..gui import icons
 
-from aipoed.git.gui import ifce
-from aipoed.git.gui import commit
+from ..git_gui import ifce
+from ..git_gui import commit
 
 LogListRow = collections.namedtuple("LogListRow",    ["commit", "abbrevcommit", "author", "when", "subject"])
 
@@ -54,7 +54,7 @@ class LogTableData(table.TableData):
             else:
                 yield LogListRow(commit=commit, abbrevcommit=abbrevcommit, author=author, when=when, subject=line)
 
-class LogListView(table.MapManagedTableView, scm.gui.actions.WDListenerMixin):
+class LogListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
     class MODEL(table.MapManagedTableView.MODEL):
         ROW = LogListRow
         TYPES = ROW(commit=GObject.TYPE_STRING, abbrevcommit=GObject.TYPE_STRING, author=GObject.TYPE_STRING, when=GObject.TYPE_STRING, subject=GObject.TYPE_STRING,)
@@ -78,7 +78,7 @@ class LogListView(table.MapManagedTableView, scm.gui.actions.WDListenerMixin):
     SPECIFICATION = table.simple_text_specification(MODEL, ("Commit", "abbrevcommit", 0.0), ("Author", "author", 0.0), ("When", "when", 0.0), ("Subject", "subject", 0.0))
     def __init__(self, size_req=None):
         table.MapManagedTableView.__init__(self, size_req=size_req)
-        scm.gui.actions.WDListenerMixin.__init__(self)
+        scm_gui.actions.WDListenerMixin.__init__(self)
         self.set_contents()
     def populate_action_groups(self):
         self.action_groups[actions.AC_SELN_UNIQUE].add_actions(

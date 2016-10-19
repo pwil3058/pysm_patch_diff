@@ -15,23 +15,23 @@
 
 from gi.repository import Gtk
 
-from aipoed import enotify
-from aipoed import CmdFailure
-from aipoed import scm
-from aipoed import utils
+from ..lib import enotify
+from ..lib import CmdFailure
+from ..lib import scm
+from ..lib import utils
 
-from aipoed.patch_diff import patchlib
+from ..patch_diff import patchlib
 
-from aipoed.gui import actions
-from aipoed.gui import dialogue
-from aipoed.gui import gutils
-from aipoed.gui import textview
-from aipoed.gui import text_edit
-from aipoed.gui import icons
+from ..gui import actions
+from ..gui import dialogue
+from ..gui import gutils
+from ..gui import textview
+from ..gui import text_edit
+from ..gui import icons
 
-from aipoed.patch_diff.gui import diff
+from ..patch_diff.gui import diff
 
-from aipoed.git.gui import ifce
+from ..git_gui import ifce
 
 class StagedDiffNotebook(diff.DiffTextsWidget):
     def __init__(self):
@@ -250,7 +250,7 @@ class ShowCommitDialog(dialogue.ListenerDialog):
     def _handle_response_cb(self, dialog, response_id):
         self.destroy()
 
-actions.CLASS_INDEP_AGS[scm.gui.actions.AC_IN_SCM_PGND].add_actions(
+actions.CLASS_INDEP_AGS[scm_gui.actions.AC_IN_SCM_PGND].add_actions(
     [
         # TODO: be more fussy about when staged commit enabled?
         ('git_commit_staged_changes', icons.STOCK_COMMIT, _('Commit'), None,

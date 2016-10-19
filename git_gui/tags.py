@@ -19,18 +19,18 @@ from gi.repository import Gdk
 from gi.repository import Gtk
 from gi.repository import GObject
 
-from aipoed import enotify
-from aipoed import runext
-from aipoed import scm
-from aipoed import utils
+from ..lib import enotify
+from ..lib import runext
+from ..lib import scm
+from ..lib import utils
 
-from aipoed.gui import actions
-from aipoed.gui import dialogue
-from aipoed.gui import table
-from aipoed.gui import text_edit
-from aipoed.gui import icons
+from ..gui import actions
+from ..gui import dialogue
+from ..gui import table
+from ..gui import text_edit
+from ..gui import icons
 
-from aipoed.git.gui import ifce
+from ..git_gui import ifce
 
 TagListRow = collections.namedtuple("TagListRow",    ["name", "annotation"])
 
@@ -60,7 +60,7 @@ class TagTableData(table.TableData):
         for line in self._lines:
             yield TagListRow(name=line, annotation=self._get_annotation(line))
 
-class TagListView(table.MapManagedTableView, scm.gui.actions.WDListenerMixin):
+class TagListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
     MODEL = TagListModel
     PopUp = "/tags_popup"
     SET_EVENTS = enotify.E_CHANGE_WD|scm.E_NEW_SCM
@@ -78,7 +78,7 @@ class TagListView(table.MapManagedTableView, scm.gui.actions.WDListenerMixin):
     SPECIFICATION = table.simple_text_specification(MODEL, (_("Name"), "name", 0.0), (_("Annotation"), "annotation", 0.0))
     def __init__(self, size_req=None):
         table.MapManagedTableView.__init__(self, size_req=size_req)
-        scm.gui.actions.WDListenerMixin.__init__(self)
+        scm_gui.actions.WDListenerMixin.__init__(self)
         self.set_contents()
     def populate_action_groups(self):
         self.action_groups[actions.AC_SELN_UNIQUE].add_actions(
@@ -194,7 +194,7 @@ class SetTagDialog(dialogue.ReadTextAndTogglesDialog, dialogue.ClientMixin):
                 self.destroy()
 
 # TODO: be more fussy about when set tag enabled?
-actions.CLASS_INDEP_AGS[scm.gui.actions.AC_IN_SCM_PGND].add_actions(
+actions.CLASS_INDEP_AGS[scm_gui.actions.AC_IN_SCM_PGND].add_actions(
     [
         ("git_tag_current_head", icons.STOCK_TAG, _("Tag"), None,
          _("Set a tag on the current HEAD"),
