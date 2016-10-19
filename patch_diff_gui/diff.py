@@ -25,7 +25,7 @@ from ..lib import CmdResult, CmdFailure
 from ..lib import runext
 from ..lib import options
 
-from .. import patchlib
+from ..patch_diff import patchlib
 
 from ..gui import dialogue
 from ..gui import gutils
