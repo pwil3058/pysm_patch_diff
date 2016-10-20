@@ -19,16 +19,10 @@ import os
 
 from ..gui import apath
 
-_APP_NAME = None
-
-def initialize(app_name, config_dir_name):
-    global _APP_NAME
-    global WorkspacePathView
-    _APP_NAME = app_name
-    WorkspacePathView.SAVED_FILE_NAME = os.path.join(config_dir_name, "workspaces")
+from ... import CONFIG_DIR_PATH
 
 class WorkspacePathView(apath.AliasPathView):
-    SAVED_FILE_NAME = None
+    SAVED_FILE_NAME = os.path.join(CONFIG_DIR_PATH, "workspaces")
 
 class WorkspacePathTable(apath.AliasPathTable):
     VIEW = WorkspacePathView
