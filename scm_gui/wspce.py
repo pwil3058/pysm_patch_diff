@@ -17,6 +17,9 @@
 
 import os
 
+from gi.repository import Gtk
+
+from ..gui import actions
 from ..gui import apath
 
 from ... import CONFIG_DIR_PATH
@@ -78,19 +81,18 @@ def chdir(newdir):
     enotify.notify_events(enotify.E_CHANGE_WD, new_wd=CURDIR)
     return retval
 
-#def change_wd_acb(_arg):
-    #open_dialog = WorkspaceOpenDialog()
-    #if open_dialog.run() == Gtk.ResponseType.OK:
-        #newpg = open_dialog.get_path()
-        #if newpg:
-            #with open_dialog.showing_busy():
-                #result = chdir(newpg)
-            #open_dialog.report_any_problems(result)
-    #open_dialog.destroy()
+def change_wd_acb(_arg):
+    open_dialog = WorkspaceOpenDialog()
+    if open_dialog.run() == Gtk.ResponseType.OK:
+        newpg = open_dialog.get_path()
+        if newpg:
+            with open_dialog.showing_busy():
+                result = chdir(newpg)
+            open_dialog.report_any_problems(result)
+    open_dialog.destroy()
 
-#actions.CLASS_INDEP_AGS[actions.AC_DONT_CARE].add_actions(
-    #[
-        #("config_menu", None, _("_Configuration")),
-        #("config_change_wd", Gtk.STOCK_OPEN, _("_Open"), "",
-         #_("Change current working directory"), change_wd_acb),
-    #])
+actions.CLASS_INDEP_AGS[actions.AC_DONT_CARE].add_actions(
+    [
+        ("scm_change_wd", Gtk.STOCK_OPEN, _("Open"), "",
+         _("Change current working directory"), change_wd_acb),
+    ])
