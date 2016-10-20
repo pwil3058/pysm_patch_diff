@@ -25,16 +25,10 @@ from ..lib import utils
 from ..gui import apath
 from ..gui import gutils
 
-_APP_NAME = None
-
-def initialize(app_name, config_dir_name):
-    global _APP_NAME
-    global RepoPathView
-    _APP_NAME = app_name
-    RepoPathView.SAVED_FILE_NAME = os.path.join(config_dir_name, "repositories")
+from ... import CONFIG_DIR_PATH
 
 class RepoPathView(apath.AliasPathView):
-    SAVED_FILE_NAME = None
+    SAVED_FILE_NAME = os.path.join(CONFIG_DIR_PATH, "repositories")
     def __init__(self):
         apath.AliasPathView.__init__(self)
     @staticmethod
