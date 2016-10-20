@@ -20,7 +20,9 @@ import shutil
 from gi.repository import Gtk
 from gi.repository import GObject
 
-from ..lib import scm
+from .. import scm
+from .. import scm_gui
+
 from ..lib import utils
 
 from ..gui import actions

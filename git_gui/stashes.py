@@ -20,10 +20,12 @@ from gi.repository import Gdk
 from gi.repository import Gtk
 from gi.repository import GObject
 
+from .. import scm
+from .. import scm_gui
+
 from ..lib import enotify
 from ..lib import CmdFailure
 from ..lib import runext
-from ..lib import scm
 from ..lib import utils
 
 from ..gui import actions
@@ -32,7 +34,7 @@ from ..gui import table
 from ..gui import text_edit
 from ..gui import icons
 
-from ..patch_diff.gui import diff
+from ..patch_diff_gui import diff
 
 from ..lib import utils
 

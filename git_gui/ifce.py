@@ -24,13 +24,16 @@ import errno
 
 from gi.repository import Pango
 
+from .. import scm
+from .. import scm_gui
+
 from ..lib import CmdResult
 from ..lib import runext
 from ..lib import enotify
-from ..lib import scm
 from ..lib import utils
 
-from ..decorators import singleton
+from ..lib.decorators import singleton
+
 from ..patch_diff import patchlib
 
 from ..gui import table

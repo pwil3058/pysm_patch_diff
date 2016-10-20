@@ -23,7 +23,7 @@ from ..lib import CmdFailure
 from ..lib import utils
 from ..lib import runext
 
-from ..patch_diff.gui import diff
+from ..patch_diff_gui import diff
 
 from ..gui import dialogue
 from ..gui import gutils

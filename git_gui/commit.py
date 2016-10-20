@@ -15,9 +15,11 @@
 
 from gi.repository import Gtk
 
+from .. import scm
+from .. import scm_gui
+
 from ..lib import enotify
 from ..lib import CmdFailure
-from ..lib import scm
 from ..lib import utils
 
 from ..patch_diff import patchlib
@@ -29,7 +31,7 @@ from ..gui import textview
 from ..gui import text_edit
 from ..gui import icons
 
-from ..patch_diff.gui import diff
+from ..patch_diff_gui import diff
 
 from ..git_gui import ifce
 
