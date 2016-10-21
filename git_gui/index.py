@@ -68,7 +68,6 @@ class IndexFileTreeView(file_tree.FileTreeView, enotify.Listener, scm_gui.action
       </popup>
     </ui>
     '''
-    _FILE_ICON = {True : Gtk.STOCK_DIRECTORY, False : Gtk.STOCK_FILE}
     AUTO_EXPAND = True
     def __init__(self, hide_clean=False, **kwargs):
         file_tree.FileTreeView.__init__(self, hide_clean=hide_clean)
