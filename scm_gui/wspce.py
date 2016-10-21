@@ -35,8 +35,8 @@ class WorkspaceOpenDialog(apath.PathSelectDialog):
     def __init__(self, parent=None):
         apath.PathSelectDialog.__init__(self, label=_("Workspace/Directory"), parent=parent)
 
-def generate_workspace_menu():
-    return WorkspacePathView.generate_alias_path_menu(_("Workspaces"), lambda newtgnd: chdir(newtgnd))
+def generate_chdir_to_workspace_menu(label=_("Change Directory To")):
+    return WorkspacePathView.generate_alias_path_menu(label, lambda newtgnd: chdir(newtgnd))
 
 def add_workspace_path(path):
     return WorkspacePathView.append_saved_path(path)
