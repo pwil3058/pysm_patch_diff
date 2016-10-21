@@ -109,6 +109,24 @@ class RemotesComboBox(Gtk.ComboBoxText):
         if count == 1:
             self.set_active(0)
 
+class RemoteHeadsComboBoxWithEntryWpr:
+    _LS_REMOTE_RE = re.compile(r"[a-fA-F0-9]+\s+(\S+)")
+    def __init__(self, remote_name=None):
+        self.widget = Gtk.ComboBoxText.new_with_entry()
+        self.remote_name = remote_name
+    def __getattr__(self, attr_name):
+        return getattr(self.widget, attr_name)
+    @property
+    def remote_name(self):
+        return self.__remote_name
+    @remote_name.setter
+    def remote_name(self, remote_name):
+        self.__remote_name = remote_name
+        self.widget.remove_all()
+        if self.__remote_name:
+            for line in runext.run_get_cmd(["git", "ls-remote", "--heads", self.__remote_name], default="").splitlines():
+                self.append_text(self._LS_REMOTE_RE.match(line).groups()[0])
+
 class FetchWidget(Gtk.VBox):
     FLAG_SPECS = [
             ("--all",
