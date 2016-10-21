@@ -94,5 +94,7 @@ def change_wd_acb(_arg):
 actions.CLASS_INDEP_AGS[actions.AC_DONT_CARE].add_actions(
     [
         ("scm_change_wd", Gtk.STOCK_OPEN, _("Open"), "",
-         _("Change current working directory"), change_wd_acb),
+         _("Change current working directory"),
+         change_wd_acb
+        ),
     ])

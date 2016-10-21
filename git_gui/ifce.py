@@ -310,6 +310,19 @@ class Interface:
                 if not basename:
                     break
         return None
+    @staticmethod
+    def get_superproject_root():
+        if not runext.run_cmd(["git", "config", "--local", "-l"]).is_ok:
+            return None
+        dirpath = os.getcwd()
+        while True:
+            if os.path.isdir(os.path.join(dirpath, ".git")):
+                return dirpath
+            else:
+                dirpath, basename = os.path.split(dirpath)
+                if not basename:
+                    break
+        return None
     def get_remotes_table_data():
         from ..git_gui import remotes
         return remote.RemoteRepoTableData()
