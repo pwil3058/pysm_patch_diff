@@ -111,7 +111,7 @@ class Interface:
         return do_action_cmd(cmd, scm.E_TAG|enotify.E_CHANGE_WD, None, [])
     @staticmethod
     def do_clone_as(repo, tgtdir=None):
-        cmd = ["git", "clone", repo]
+        cmd = ["git", "clone", "--recursive", repo]
         if tgtdir is not None:
             cmd.append(tgtdir)
         return do_action_cmd(cmd, scm.E_CLONE, None, [])
