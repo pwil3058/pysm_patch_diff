@@ -20,7 +20,7 @@ import urllib.parse
 
 from gi.repository import Gtk
 
-from ..lib import utils
+from ..bab import utils
 
 from ..gui import apath
 from ..gui import gutils

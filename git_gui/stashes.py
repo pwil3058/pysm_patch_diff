@@ -23,10 +23,10 @@ from gi.repository import GObject
 from .. import scm
 from .. import scm_gui
 
-from ..lib import enotify
-from ..lib import CmdFailure
-from ..lib import runext
-from ..lib import utils
+from ..bab import enotify
+from ..bab import CmdFailure
+from ..bab import runext
+from ..bab import utils
 
 from ..gui import actions
 from ..gui import dialogue
@@ -36,7 +36,7 @@ from ..gui import icons
 
 from ..patch_diff_gui import diff
 
-from ..lib import utils
+from ..bab import utils
 
 from ..git_gui import ifce
 

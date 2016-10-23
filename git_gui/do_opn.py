@@ -41,7 +41,7 @@ class DoOpnMixin(doop.DoOperationMixin):
             return
         while os.path.exists(as_file_path):
             from gi.repository import Gtk
-            from ..lib import CmdResult
+            from ..bab import CmdResult
             from ..gui import dialogue
             result = CmdResult.error(stderr="{0}: already exists".format(as_file_path)) | CmdResult.Suggest.OVERWRITE_OR_RENAME
             resp = self.ask_rename_overwrite_or_cancel(result)

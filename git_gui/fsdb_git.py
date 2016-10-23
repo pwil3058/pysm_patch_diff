@@ -22,11 +22,11 @@ from gi.repository import Pango
 
 from ..git import git_utils
 
-from ..lib import runext
+from ..bab import runext
 
 from ..gui import fsdb
 
-from ..lib import utils
+from ..bab import utils
 
 class FileStatus:
     UNMODIFIED = '  '

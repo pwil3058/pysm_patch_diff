@@ -23,14 +23,14 @@ from gi.repository import GObject
 from .. import scm
 from .. import scm_gui
 
-from ..lib import utils
+from ..bab import utils
 
 from ..gui import actions
 from ..gui import dialogue
 from ..gui import file_tree
 from ..gui import icons
 
-from ..lib import enotify
+from ..bab import enotify
 
 from ..git_gui import ifce
 

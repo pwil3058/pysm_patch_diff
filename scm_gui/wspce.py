@@ -42,7 +42,7 @@ def add_workspace_path(path):
     return WorkspacePathView.append_saved_path(path)
 
 def chdir(newdir):
-    from ..lib import CmdResult
+    from ..bab import CmdResult
     events = 0
     try:
         os.chdir(newdir)
@@ -54,8 +54,8 @@ def chdir(newdir):
         retval = CmdResult.error(stderr="{0}: \"{1}\" : {2}".format(ecode, newdir, emsg))
         newdir = os.getcwd()
     # NB regardless of success of os.chdir() we need to check the interfaces
-    from ..lib import enotify
-    from ..lib import options
+    from ..bab import enotify
+    from ..bab import options
     from ..gui.console import LOG
     from ..scm_gui import ifce as scm_ifce
     scm_ifce.get_ifce()

@@ -21,9 +21,9 @@ from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import Pango
 
-from ..lib import CmdResult, CmdFailure
-from ..lib import runext
-from ..lib import options
+from ..bab import CmdResult, CmdFailure
+from ..bab import runext
+from ..bab import options
 
 from ..patch_diff import patchlib
 

@@ -187,7 +187,7 @@ def get_ifce(dir_path=None):
     return SCM
 
 def check_interfaces(args):
-    from ..lib import enotify
+    from ..bab import enotify
     events = 0
     curr_scm = SCM
     get_ifce()
@@ -196,7 +196,7 @@ def check_interfaces(args):
         events |= E_NEW_SCM
         if SCM.in_valid_pgnd:
             import os
-            from ..lib import options
+            from ..bab import options
             from ..gui import recollect
             from ..scm_gui import wspce
             newdir = SCM.get_playground_root()
@@ -216,7 +216,7 @@ def check_interfaces(args):
 
 def init_current_dir(backend):
     import os
-    from ..lib import enotify
+    from ..bab import enotify
     result = create_new_playground(os.getcwd(), backend)
     events = 0
     curr_scm = SCM
@@ -242,8 +242,8 @@ def init_current_dir(backend):
 
 def init():
     import os
-    from ..lib import options
-    from ..lib import enotify
+    from ..bab import options
+    from ..bab import enotify
     orig_dir = os.getcwd()
     options.load_global_options()
     get_ifce()

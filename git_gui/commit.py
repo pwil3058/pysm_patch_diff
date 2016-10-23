@@ -18,9 +18,9 @@ from gi.repository import Gtk
 from .. import scm
 from .. import scm_gui
 
-from ..lib import enotify
-from ..lib import CmdFailure
-from ..lib import utils
+from ..bab import enotify
+from ..bab import CmdFailure
+from ..bab import utils
 
 from ..patch_diff import patchlib
 

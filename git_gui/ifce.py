@@ -27,12 +27,12 @@ from gi.repository import Pango
 from .. import scm
 from .. import scm_gui
 
-from ..lib import CmdResult
-from ..lib import runext
-from ..lib import enotify
-from ..lib import utils
+from ..bab import CmdResult
+from ..bab import runext
+from ..bab import enotify
+from ..bab import utils
 
-from ..lib.decorators import singleton
+from ..bab.decorators import singleton
 
 from ..patch_diff import patchlib
 

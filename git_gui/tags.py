@@ -22,9 +22,9 @@ from gi.repository import GObject
 from .. import scm
 from .. import scm_gui
 
-from ..lib import enotify
-from ..lib import runext
-from ..lib import utils
+from ..bab import enotify
+from ..bab import runext
+from ..bab import utils
 
 from ..gui import actions
 from ..gui import dialogue

@@ -28,9 +28,9 @@ from .. import scm_gui
 
 from ..git import git_utils
 
-from ..lib import enotify
-from ..lib import os_utils
-from ..lib import utils
+from ..bab import enotify
+from ..bab import os_utils
+from ..bab import utils
 
 from ..gui import actions
 from ..gui import dialogue

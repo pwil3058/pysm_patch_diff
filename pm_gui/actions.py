@@ -20,7 +20,7 @@ Workspace status action groups
 from .. import pm
 from .. import pm_gui
 
-from ..lib import enotify
+from ..bab import enotify
 
 from ..gui import actions
 

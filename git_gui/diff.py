@@ -19,9 +19,9 @@ import hashlib
 
 from gi.repository import Gtk
 
-from ..lib import CmdFailure
-from ..lib import utils
-from ..lib import runext
+from ..bab import CmdFailure
+from ..bab import utils
+from ..bab import runext
 
 from ..patch_diff_gui import diff
 

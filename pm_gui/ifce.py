@@ -19,7 +19,7 @@ import os
 import collections
 import hashlib
 
-from ..lib import CmdResult
+from ..bab import CmdResult
 
 _BACKEND = {}
 _MISSING_BACKEND = {}
@@ -229,12 +229,12 @@ class PatchState:
     APPLIED_UNREFRESHABLE = '!'
 
 def generic_delete_files(file_paths):
-    from ..lib import os_utils
+    from ..bab import os_utils
     return os_utils.os_delete_files(file_paths, events=E_FILE_DELETED)
 
 def set_patch_file_description(patch_file_path, description, overwrite=False):
     from ..patch_diff import patchlib
-    from ..lib import utils
+    from ..bab import utils
     if os.path.isfile(patch_file_path):
         try:
             patch_obj = patchlib.Patch.parse_text(utils.get_file_contents(patch_file_path))
@@ -254,7 +254,7 @@ def set_patch_file_description(patch_file_path, description, overwrite=False):
 def get_patch_file_description(patch_file_path):
     assert os.path.isfile(patch_file_path), _("Patch file \"{0}\" does not exist\n").format(patch_file_path)
     from ..patch_diff import patchlib
-    from ..lib import utils
+    from ..bab import utils
     pobj = patchlib.Patch.parse_text(utils.get_file_contents(patch_file_path))
     return pobj.get_description()
 
