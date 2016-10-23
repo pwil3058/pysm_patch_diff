@@ -66,13 +66,15 @@ class RepoSelectDialog(apath.PathSelectDialog):
     PATH_TABLE = RepoPathTable
     def __init__(self, parent=None):
         apath.PathSelectDialog.__init__(self, label=_("Repository"), parent=parent)
+        self._browse_button.set_tooltip_text(_("Browse for a local repository"))
         hbox = Gtk.HBox()
         hbox.pack_start(Gtk.Label(_("As:")), expand=True, fill=True, padding=0)
         self._target = gutils.new_mutable_combox_text_with_entry()
         self._target.get_child().set_width_chars(32)
         self._target.get_child().connect("activate", self._target_cb)
         hbox.pack_start(self._target, expand=True, fill=True, padding=0)
-        self._default_button = Gtk.Button(label=_("_Default"))
+        self._default_button = Gtk.Button(label=_("Default"))
+        self._default_button.set_tooltip_text(_("Append default name for repository"))
         self._default_button.connect("clicked", self._default_cb)
         hbox.pack_start(self._default_button, expand=False, fill=False, padding=0)
         self.vbox.pack_start(hbox, expand=False, fill=False, padding=0)
@@ -89,7 +91,8 @@ class RepoSelectDialog(apath.PathSelectDialog):
         return os.path.basename(path)
     def _default_cb(self, button=None):
         dflt = self._get_default_target()
-        self._target.set_text(dflt)
+        text = self._target.get_text()
+        self._target.set_text(os.path.join(text, dflt))
     def get_target(self):
         target = self._target.get_text()
         if not target:

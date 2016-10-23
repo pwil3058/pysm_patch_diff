@@ -20,6 +20,8 @@ import collections
 
 from gi.repository import Pango
 
+from ..git import git_utils
+
 from ..lib import runext
 
 from ..gui import fsdb
@@ -127,6 +129,7 @@ def iter_git_file_data_text(text, related_file_path_data):
             related_file_path_data.append((file_path, extra_data.path))
         yield (file_path, line[:2], extra_data)
 
+# TODO: rewrite fsdb_git.WsFileDb to better handle submodules
 class WsFileDb(fsdb.GenericSnapshotWsFileDb):
     class FileDir(fsdb.GenericSnapshotWsFileDb.FileDir):
         DIR_DATA = GitDirData
@@ -136,22 +139,24 @@ class WsFileDb(fsdb.GenericSnapshotWsFileDb):
         SIGNIFICANT_DATA_SET = FileStatus.SIGNIFICANT_SET
         ORDERED_DIR_STATUS_LIST = FileStatus.MODIFIED_LIST + [FileStatus.NOT_TRACKED]
         ORDERED_DIR_CLEAN_STATUS_LIST = [x for x in FileStatus.MODIFIED_LIST if x not in FileStatus.CLEAN_SET] + [FileStatus.NOT_TRACKED]
-        def _get_initial_status(self):
-            if not self._file_status_snapshot.status_set:
-                return None
-            for status in self.ORDERED_DIR_STATUS_LIST:
-                if status in self._file_status_snapshot.status_set:
-                    return status
-            return None
-        def _get_initial_clean_status(self):
-            if not self._file_status_snapshot.status_set:
-                return None
-            for status in self.ORDERED_DIR_CLEAN_STATUS_LIST:
-                if status in self._file_status_snapshot.status_set:
-                    return status
-            return None
+        def _get_initial_status(self, dir_path):
+            if self._file_status_snapshot.status_set:
+                for status in self.ORDERED_DIR_STATUS_LIST:
+                    if status in self._file_status_snapshot.status_set:
+                        return status
+            return FileStatus.IGNORED if git_utils.is_ignored_path(dir_path) else None
+        def _get_initial_clean_status(self, dir_path):
+            if self._file_status_snapshot.status_set:
+                for status in self.ORDERED_DIR_CLEAN_STATUS_LIST:
+                    if status in self._file_status_snapshot.status_set:
+                        return status
+            return FileStatus.IGNORED if git_utils.is_ignored_path(dir_path) else None
+        def _is_hidden_dir(self, ddata):
+            if ddata.name[0] == ".":
+                return ddata.status not in self.SIGNIFICANT_DATA_SET and ddata.clean_status not in self.SIGNIFICANT_DATA_SET
+            return ddata.status == FileStatus.IGNORED
     def _get_file_data_text(self, h):
-        file_data_text = runext.run_get_cmd(["git", "status", "--porcelain", "--ignored", "--untracked=all"])
+        file_data_text = runext.run_get_cmd(["git", "status", "--porcelain", "--ignored", "--untracked=all", "--ignore-submodules=none"])
         h.update(file_data_text.encode())
         return file_data_text
     @staticmethod
