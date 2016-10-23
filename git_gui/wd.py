@@ -26,6 +26,8 @@ from .. import pm_gui
 from .. import scm
 from .. import scm_gui
 
+from ..git import git_utils
+
 from ..lib import enotify
 from ..lib import os_utils
 from ..lib import utils
@@ -45,6 +47,18 @@ class WDTreeModel(file_tree.FileTreeModel):
     @staticmethod
     def _get_file_db():
         return scm_gui.ifce.SCM.get_wd_file_db()
+
+AC_ONLY_SUBMODULES_SELECTED = actions.ActionCondns.new_flag()
+
+def get_masked_seln_conditions(seln):
+    if seln is None:
+        return actions.MaskedCondns(0, AC_ONLY_SUBMODULES_SELECTED)
+    sub_module_paths = git_utils.get_submodule_paths()
+    model, selection = seln.get_selected_rows()
+    for model_iter in selection:
+        if model[model_iter][0].path[2:] not in sub_module_paths:
+            return actions.MaskedCondns(0, AC_ONLY_SUBMODULES_SELECTED)
+    return actions.MaskedCondns(AC_ONLY_SUBMODULES_SELECTED, AC_ONLY_SUBMODULES_SELECTED)
 
 class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_gui.actions.WDListenerMixin, pm_gui.actions.WDListenerMixin, do_opn.DoOpnMixin):
     MODEL = WDTreeModel
@@ -73,6 +87,8 @@ class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_gui.actions.WDLis
           <separator/>
           <menuitem action="wd_add_files_to_index"/>
           <menuitem action="wd_remove_files_in_index"/>
+          <separator/>
+          <menuitem action="wd_remove_submodules"/>
         </placeholder>
         <separator/>
         <placeholder name="unique_selection"/>
@@ -100,6 +116,7 @@ class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_gui.actions.WDLis
         pm_gui.actions.WDListenerMixin.__init__(self)
         self._update_popup_cb()
         self.add_notification_cb(pm.E_PATCH_STACK_CHANGES|pm.E_NEW_PM|enotify.E_CHANGE_WD, self._update_popup_cb)
+        self.get_selection().connect('changed', lambda seln: self.action_groups.update_condns(get_masked_seln_conditions(seln)))
     def _update_popup_cb(self, **kwargs):
         if pm_gui.ifce.PM.is_poppable:
             self.set_popup("/pmic_files_popup")
@@ -117,6 +134,13 @@ class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_gui.actions.WDLis
                 ("copy_file_to_index", Gtk.STOCK_COPY, _("Copy"), None,
                  _("Make a copy of the selected file in the index"),
                  lambda _action=None: self.git_do_copy_file_to_index(self.get_selected_fsi_path())
+                ),
+            ])
+        self.action_groups[scm_gui.actions.AC_IN_SCM_PGND|AC_ONLY_SUBMODULES_SELECTED].add_actions(
+            [
+                ("wd_remove_submodules", Gtk.STOCK_REMOVE, _("Remove Submodules"), None,
+                 _("Remove the selected subdirectories"),
+                 lambda _action=None: self.git_do_remove_files_in_index(self.get_selected_fsi_paths())
                 ),
             ])
         self.action_groups[scm_gui.actions.AC_IN_SCM_PGND|pm_gui.actions.AC_NOT_PMIC|actions.AC_SELN_UNIQUE].add_actions(
