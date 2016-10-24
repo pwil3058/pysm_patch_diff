@@ -88,6 +88,7 @@ class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_gui.actions.WDLis
           <menuitem action="wd_add_files_to_index"/>
           <menuitem action="wd_remove_files_in_index"/>
           <separator/>
+          <menuitem action="wd_cd_to_submodule"/>
           <menuitem action="wd_remove_submodules"/>
         </placeholder>
         <separator/>
@@ -136,7 +137,14 @@ class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_gui.actions.WDLis
                  lambda _action=None: self.git_do_copy_file_to_index(self.get_selected_fsi_path())
                 ),
             ])
-        self.action_groups[scm_gui.actions.AC_IN_SCM_PGND|AC_ONLY_SUBMODULES_SELECTED].add_actions(
+        self.action_groups[scm_gui.actions.AC_IN_SCM_PGND|AC_ONLY_SUBMODULES_SELECTED|actions.AC_SELN_UNIQUE].add_actions(
+            [
+                ("wd_cd_to_submodule", Gtk.STOCK_REMOVE, _("Change Directory"), None,
+                 _("Chanage working directory to the selected submodule's root directory"),
+                 lambda _action=None: scm_gui.wspce.chdir(self.get_selected_fsi_path())
+                ),
+            ])
+        self.action_groups[scm_gui.actions.AC_IN_SCM_PGND|AC_ONLY_SUBMODULES_SELECTED|actions.AC_SELN_MADE].add_actions(
             [
                 ("wd_remove_submodules", Gtk.STOCK_REMOVE, _("Remove Submodules"), None,
                  _("Remove the selected subdirectories"),
