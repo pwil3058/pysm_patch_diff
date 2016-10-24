@@ -22,8 +22,8 @@ from gi.repository import Gtk
 
 from ..bab import utils
 
-from ..gui import apath
-from ..gui import gutils
+from ..gtx import apath
+from ..gtx import gutils
 
 from ... import CONFIG_DIR_PATH
 

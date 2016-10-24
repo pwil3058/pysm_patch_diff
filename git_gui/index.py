@@ -25,10 +25,10 @@ from .. import scm_gui
 
 from ..bab import utils
 
-from ..gui import actions
-from ..gui import dialogue
-from ..gui import file_tree
-from ..gui import icons
+from ..gtx import actions
+from ..gtx import dialogue
+from ..gtx import file_tree
+from ..gtx import icons
 
 from ..bab import enotify
 

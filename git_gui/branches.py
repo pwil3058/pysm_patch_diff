@@ -27,11 +27,11 @@ from ..bab import enotify
 from ..bab import runext
 from ..bab import utils
 
-from ..gui import actions
-from ..gui import dialogue
-from ..gui import table
-from ..gui import tlview
-from ..gui import icons
+from ..gtx import actions
+from ..gtx import dialogue
+from ..gtx import table
+from ..gtx import tlview
+from ..gtx import icons
 
 from ..git_gui import do_opn
 

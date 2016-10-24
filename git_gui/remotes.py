@@ -28,11 +28,11 @@ from ..bab import enotify
 from ..bab import runext
 from ..bab import utils
 
-from ..gui import actions
-from ..gui import dialogue
-from ..gui import gutils
-from ..gui import icons
-from ..gui import table
+from ..gtx import actions
+from ..gtx import dialogue
+from ..gtx import gutils
+from ..gtx import icons
+from ..gtx import table
 
 RemotesListRow = collections.namedtuple("RemotesListRow",    ["name", "inbound_url", "outbound_url"])
 

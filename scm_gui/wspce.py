@@ -19,8 +19,8 @@ import os
 
 from gi.repository import Gtk
 
-from ..gui import actions
-from ..gui import apath
+from ..gtx import actions
+from ..gtx import apath
 
 from ... import CONFIG_DIR_PATH
 
@@ -56,14 +56,14 @@ def chdir(newdir):
     # NB regardless of success of os.chdir() we need to check the interfaces
     from ..bab import enotify
     from ..bab import options
-    from ..gui.console import LOG
+    from ..gtx.console import LOG
     from ..scm_gui import ifce as scm_ifce
     scm_ifce.get_ifce()
     if scm_ifce.SCM.in_valid_pgnd:
         # move down to the root dir
         newdir = scm_ifce.SCM.get_playground_root()
         os.chdir(newdir)
-        from ..gui import recollect
+        from ..gtx import recollect
         WorkspacePathView.append_saved_path(newdir)
         recollect.set("workspace", "last_used", newdir)
     from ..pm_gui import ifce as pm_ifce

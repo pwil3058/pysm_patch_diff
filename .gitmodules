@@ -1,0 +1,6 @@
+[submodule "gtx"]
+	path = gtx
+	url = git@github.com:pwil3058/pysm_gtx.git
+[submodule "bab"]
+	path = bab
+	url = git@github.com:pwil3058/pysm_bab.git

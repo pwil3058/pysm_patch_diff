@@ -36,7 +36,7 @@ def backend_requirements():
     return msg
 
 def report_backend_requirements():
-    from ..gui import dialogue
+    from ..gtx import dialogue
     dialogue.main_window.inform_user(backend_requirements(), parent=parent)
 
 def avail_backends():
@@ -66,7 +66,7 @@ def choose_scm_backend():
         return None
     elif len(bel) == 1:
         return bel[0]
-    from ..gui import dialogue
+    from ..gtx import dialogue
     return dialogue.SelectFromListDialog(olist=bel, prompt=_('Choose SCM back end:')).make_selection()
 
 class DummyTableData:
@@ -137,7 +137,7 @@ class _NULL_BACKEND:
         return []
     @staticmethod
     def get_index_file_db():
-        from ..gui import fsdb
+        from ..gtx import fsdb
         return fsdb.NullFileDb()
     @staticmethod
     def get_parents_data(rev=None):
@@ -169,7 +169,7 @@ class _NULL_BACKEND:
         '''
         Get the SCM view of the current directory
         '''
-        from ..gui import fsdb
+        from ..gtx import fsdb
         return fsdb.OsFileDb()
     @staticmethod
     def is_ready_for_import():
@@ -197,7 +197,7 @@ def check_interfaces(args):
         if SCM.in_valid_pgnd:
             import os
             from ..bab import options
-            from ..gui import recollect
+            from ..gtx import recollect
             from ..scm_gui import wspce
             newdir = SCM.get_playground_root()
             if not os.path.samefile(newdir, os.getcwd()):
@@ -232,7 +232,7 @@ def init_current_dir(backend):
         events |= E_NEW_PM
     if SCM.in_valid_pgnd:
         from ..scm_gui import wspce
-        from ..gui import recollect
+        from ..gtx import recollect
         curr_dir = os.getcwd()
         wspce.add_workspace_path(curr_dir)
         recollect.set("workspace", "last_used", curr_dir)
@@ -251,14 +251,14 @@ def init():
         root = SCM.get_playground_root()
         os.chdir(root)
         from ..scm_gui import wspce
-        from ..gui import recollect
+        from ..gtx import recollect
         wspce.add_workspace_path(root)
         recollect.set("workspace", "last_used", root)
     from ..pm_gui import ifce as pm_ifce
     pm_ifce.get_ifce()
     curr_dir = os.getcwd()
     options.reload_pgnd_options()
-    from ..gui.console import LOG
+    from ..gtx.console import LOG
     LOG.start_cmd("Working Directory: {0}\n".format(curr_dir))
     if SCM.in_valid_pgnd:
         LOG.append_stdout('In valid repository\n')
@@ -272,5 +272,5 @@ def init():
         from ..scm.events import E_NEW_SCM
         from ..pm.events import E_NEW_PM
         enotify.notify_events(E_NEW_SCM|E_NEW_PM)
-    from ..gui import auto_update
+    from ..gtx import auto_update
     auto_update.set_initialize_event_flags(check_interfaces)

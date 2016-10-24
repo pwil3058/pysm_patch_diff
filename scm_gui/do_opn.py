@@ -19,7 +19,7 @@ import os
 
 from gi.repository import Gtk
 
-from ..gui import icons
+from ..gtx import icons
 
 from ..scm_gui import ifce as scm_ifce
 from ..scm_gui import wspce
@@ -33,7 +33,7 @@ class DoOpnMixin:
             return None
         elif len(available_backends) == 1:
             return available_backends[0]
-        from ..gui import dialogue
+        from ..gtx import dialogue
         return self.choose_from_list(alist=available_backends, prompt=_("Choose SCM back end:"))
     def scm_do_create_new_wspce(self):
         req_backend = self.scm_choose_backend()
@@ -87,7 +87,7 @@ class DoOpnMixin:
             result = scm_ifce.SCM.do_push_to_repo(None)
         self.report_any_problems(result)
     def populate_action_groups(self):
-        from ..gui.actions import AC_DONT_CARE
+        from ..gtx.actions import AC_DONT_CARE
         from .actions import AC_NOT_IN_SCM_PGND, AC_IN_SCM_PGND
         self.action_groups[AC_DONT_CARE].add_actions(
             [

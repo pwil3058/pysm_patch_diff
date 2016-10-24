@@ -26,9 +26,9 @@ from ..bab import enotify
 from ..bab import runext
 from ..bab import utils
 
-from ..gui import actions
-from ..gui import table
-from ..gui import icons
+from ..gtx import actions
+from ..gtx import table
+from ..gtx import icons
 
 from ..git_gui import ifce
 from ..git_gui import commit

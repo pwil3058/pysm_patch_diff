@@ -24,7 +24,7 @@ from ..git import git_utils
 
 from ..bab import runext
 
-from ..gui import fsdb
+from ..gtx import fsdb
 
 from ..bab import utils
 

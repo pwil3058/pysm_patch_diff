@@ -38,7 +38,7 @@ def backend_requirements():
     return msg
 
 def report_backend_requirements(parent=None):
-    from ..gui import dialogue
+    from ..gtx import dialogue
     dialogue.main_window.inform_user(backend_requirements(), parent=parent)
 
 def avail_backends():
@@ -129,7 +129,7 @@ class _NULL_BACKEND:
         return ""
     @staticmethod
     def get_combined_patch_file_db():
-        from ..gui import fsdb
+        from ..gtx import fsdb
         return fsdb.NullFileDb()
     @staticmethod
     def get_default_new_patch_save_file():
@@ -151,7 +151,7 @@ class _NULL_BACKEND:
         return ""
     @staticmethod
     def get_patch_file_db(patch_name):
-        from ..gui import fsdb
+        from ..gtx import fsdb
         return fsdb.NullFileDb()
     @staticmethod
     def get_patch_file_path(patch_name):
@@ -182,7 +182,7 @@ class _NULL_BACKEND:
         return ""
     @staticmethod
     def get_top_patch_file_db():
-        from ..gui import fsdb
+        from ..gtx import fsdb
         return fsdb.NullFileDb()
     @staticmethod
     def get_ws_update_clean_up_ready(applied_count=None):
@@ -281,7 +281,7 @@ class InterfaceMixin:
         return utils.set_file_contents(export_file_name, cls.get_patch_text(patch_name))
     @classmethod
     def do_set_patch_description(cls, patch_name, description, overwrite=False):
-        from ..gui import console
+        from ..gtx import console
         result = set_patch_file_description(cls.get_patch_file_path(patch_name), description, overwrite=overwrite)
         if result.is_ok:
             console.LOG.append_entry(_("set description for \"{0}\" patch.\n{1}\n").format(patch_name, description))

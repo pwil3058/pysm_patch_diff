@@ -27,10 +27,10 @@ from ..bab import options
 
 from ..patch_diff import patchlib
 
-from ..gui import dialogue
-from ..gui import gutils
-from ..gui import textview
-from ..gui import icons
+from ..gtx import dialogue
+from ..gtx import gutils
+from ..gtx import textview
+from ..gtx import icons
 
 class FileAndRefreshActions:
     def __init__(self):

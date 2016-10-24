@@ -36,12 +36,12 @@ from ..bab.decorators import singleton
 
 from ..patch_diff import patchlib
 
-from ..gui import table
+from ..gtx import table
 
 from ..git_gui import fsdb_git
 
 def do_action_cmd(cmd, success_emask, fail_emask, eflag_modifiers):
-    from ..gui import console
+    from ..gtx import console
     # TODO: improve do_action_cmd() and move to runext
     result = runext.run_cmd_in_console(console.LOG, cmd)
     # Because git uses stderr to report progress etc we should consider

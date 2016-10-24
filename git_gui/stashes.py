@@ -28,11 +28,11 @@ from ..bab import CmdFailure
 from ..bab import runext
 from ..bab import utils
 
-from ..gui import actions
-from ..gui import dialogue
-from ..gui import table
-from ..gui import text_edit
-from ..gui import icons
+from ..gtx import actions
+from ..gtx import dialogue
+from ..gtx import table
+from ..gtx import text_edit
+from ..gtx import icons
 
 from ..patch_diff_gui import diff
 

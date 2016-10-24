@@ -17,7 +17,7 @@
 
 from gi.repository import Gtk
 
-from ..gui import textview
+from ..gtx import textview
 from ..patch_diff_gui import diff
 
 def _framed(label, widget):

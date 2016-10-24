@@ -22,7 +22,7 @@ from .. import scm_gui
 
 from ..bab import enotify
 
-from ..gui import actions
+from ..gtx import actions
 
 AC_NOT_IN_SCM_PGND, AC_IN_SCM_PGND, AC_IN_SCM_PGND_MASK = actions.ActionCondns.new_flags_and_mask(2)
 

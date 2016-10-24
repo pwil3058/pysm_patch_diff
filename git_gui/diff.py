@@ -25,10 +25,10 @@ from ..bab import runext
 
 from ..patch_diff_gui import diff
 
-from ..gui import dialogue
-from ..gui import gutils
-from ..gui import actions
-from ..gui import icons
+from ..gtx import dialogue
+from ..gtx import gutils
+from ..gtx import actions
+from ..gtx import icons
 
 class WdDiffTextWidget(diff.DiffTextsWidget, diff.FileAndRefreshActions):
     DIFF_MODES = ["git diff", "git diff --staged", "git diff HEAD"]

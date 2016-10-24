@@ -24,12 +24,12 @@ from ..bab import utils
 
 from ..patch_diff import patchlib
 
-from ..gui import actions
-from ..gui import dialogue
-from ..gui import gutils
-from ..gui import textview
-from ..gui import text_edit
-from ..gui import icons
+from ..gtx import actions
+from ..gtx import dialogue
+from ..gtx import gutils
+from ..gtx import textview
+from ..gtx import text_edit
+from ..gtx import icons
 
 from ..patch_diff_gui import diff
 

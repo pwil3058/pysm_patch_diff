@@ -32,11 +32,11 @@ from ..bab import enotify
 from ..bab import os_utils
 from ..bab import utils
 
-from ..gui import actions
-from ..gui import dialogue
-from ..gui import file_tree
-from ..gui import xtnl_edit
-from ..gui import icons
+from ..gtx import actions
+from ..gtx import dialogue
+from ..gtx import file_tree
+from ..gtx import xtnl_edit
+from ..gtx import icons
 
 from ..git_gui import ifce
 from ..git_gui import do_opn
