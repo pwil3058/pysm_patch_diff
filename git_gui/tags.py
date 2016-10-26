@@ -30,7 +30,7 @@ from ..gtx import actions
 from ..gtx import dialogue
 from ..gtx import table
 from ..gtx import text_edit
-from ..gtx import icons
+from .. import wsm_icons
 
 from ..git_gui import ifce
 
@@ -85,7 +85,7 @@ class TagListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
     def populate_action_groups(self):
         self.action_groups[actions.AC_SELN_UNIQUE].add_actions(
             [
-                ("checkout_selected_tag", icons.STOCK_CHECKOUT, _("Checkout"), None,
+                ("checkout_selected_tag", wsm_icons.STOCK_CHECKOUT, _("Checkout"), None,
                  _("Checkout the selected tag in the current working directory"), self._checkout_seln_acb),
             ])
     def get_selected_tag(self):
@@ -198,7 +198,7 @@ class SetTagDialog(dialogue.ReadTextAndTogglesDialog, dialogue.ClientMixin):
 # TODO: be more fussy about when set tag enabled?
 actions.CLASS_INDEP_AGS[scm_gui.actions.AC_IN_SCM_PGND].add_actions(
     [
-        ("git_tag_current_head", icons.STOCK_TAG, _("Tag"), None,
+        ("git_tag_current_head", wsm_icons.STOCK_TAG, _("Tag"), None,
          _("Set a tag on the current HEAD"),
          lambda _action: SetTagDialog().show()
         ),

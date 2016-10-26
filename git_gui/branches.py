@@ -31,7 +31,7 @@ from ..gtx import actions
 from ..gtx import dialogue
 from ..gtx import table
 from ..gtx import tlview
-from ..gtx import icons
+from .. import wsm_icons
 
 from ..git_gui import do_opn
 
@@ -41,7 +41,7 @@ _MURow = collections.namedtuple("_MURow", ["name", "is_current", "is_merged", "r
 
 def _mark_up_row(row):
     if row.is_current == "*":
-        icon = icons.STOCK_CURRENT_BRANCH
+        icon = wsm_icons.STOCK_CURRENT_BRANCH
         markup = "<b><span foreground=\"green\">{0}</span></b>".format(row.name)
     elif row.is_merged:
         icon = None
@@ -123,7 +123,7 @@ class BranchListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin,
     def populate_action_groups(self):
         self.action_groups[actions.AC_SELN_UNIQUE].add_actions(
             [
-                ("checkout_selected_branch", icons.STOCK_CHECKOUT, _("Checkout"), None,
+                ("checkout_selected_branch", wsm_icons.STOCK_CHECKOUT, _("Checkout"), None,
                  _("Checkout the selected branch in the current working directory"),
                  lambda _action: self.git_do_checkout_branch(self.get_selected_branch())
                 ),
@@ -171,7 +171,7 @@ class CreateBranchDialog(dialogue.ReadTextAndToggleDialog, do_opn.DoOpnMixin):
 # TODO: be more fussy about when set branch enabled?
 actions.CLASS_INDEP_AGS[scm_gui.actions.AC_IN_SCM_PGND].add_actions(
     [
-        ("git_branch_current_head", icons.STOCK_BRANCH, _("Branch"), None,
+        ("git_branch_current_head", wsm_icons.STOCK_BRANCH, _("Branch"), None,
          _("Create a branch based on the current HEAD and (optionally) check it out"),
          lambda _action=None: CreateBranchDialog().show()
         ),

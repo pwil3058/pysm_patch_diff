@@ -31,7 +31,7 @@ from ..bab import utils
 from ..gtx import actions
 from ..gtx import dialogue
 from ..gtx import gutils
-from ..gtx import icons
+from .. import wsm_icons
 from ..gtx import table
 
 RemotesListRow = collections.namedtuple("RemotesListRow",    ["name", "inbound_url", "outbound_url"])
@@ -262,7 +262,7 @@ class FetchDialog(dialogue.CancelOKDialog, dialogue.ClientMixin):
 
 actions.CLASS_INDEP_AGS[scm_gui.actions.AC_IN_SCM_PGND].add_actions(
     [
-        ("git_fetch_from_remote", icons.STOCK_FETCH, _("Fetch"), None,
+        ("git_fetch_from_remote", wsm_icons.STOCK_FETCH, _("Fetch"), None,
          _("Fetch from a selected remote repository"),
          lambda _action=None: FetchDialog().show()
         ),

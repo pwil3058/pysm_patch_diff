@@ -29,7 +29,7 @@ from ..gtx import dialogue
 from ..gtx import gutils
 from ..gtx import textview
 from ..gtx import text_edit
-from ..gtx import icons
+from .. import wsm_icons
 
 from ..patch_diff_gui import diff
 
@@ -255,12 +255,12 @@ class ShowCommitDialog(dialogue.ListenerDialog):
 actions.CLASS_INDEP_AGS[scm_gui.actions.AC_IN_SCM_PGND].add_actions(
     [
         # TODO: be more fussy about when staged commit enabled?
-        ('git_commit_staged_changes', icons.STOCK_COMMIT, _('Commit'), None,
+        ('git_commit_staged_changes', wsm_icons.STOCK_COMMIT, _('Commit'), None,
          _('Commit the staged changes'),
          lambda _action: CommitDialog().show()
         ),
         # TODO: be more fussy about when amend commit enabled?
-        ('git_amend_last_commit', icons.STOCK_AMEND_COMMIT, _('Amend'), None,
+        ('git_amend_last_commit', wsm_icons.STOCK_AMEND_COMMIT, _('Amend'), None,
          _('Amend the last commit'),
          lambda _action: AmendCommitDialog().show()
         ),

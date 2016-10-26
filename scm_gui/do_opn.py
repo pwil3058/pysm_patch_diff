@@ -19,7 +19,7 @@ import os
 
 from gi.repository import Gtk
 
-from ..gtx import icons
+from .. import wsm_icons
 
 from ..scm_gui import ifce as scm_ifce
 from ..scm_gui import wspce
@@ -91,29 +91,29 @@ class DoOpnMixin:
         from .actions import AC_NOT_IN_SCM_PGND, AC_IN_SCM_PGND
         self.action_groups[AC_DONT_CARE].add_actions(
             [
-                ("scm_create_new_workspace", icons.STOCK_NEW_WORKSPACE, _("New"), "",
+                ("scm_create_new_workspace", wsm_icons.STOCK_NEW_WORKSPACE, _("New"), "",
                  _("Create a new intitialized workspace"),
                  lambda _action=None: self.scm_do_create_new_wspce()
                 ),
             ])
         self.action_groups[AC_NOT_IN_SCM_PGND].add_actions(
             [
-                ("scm_initialize_curdir", icons.STOCK_INIT, _("Initialise"), "",
+                ("scm_initialize_curdir", wsm_icons.STOCK_INIT, _("Initialise"), "",
                  _("Initialise the current working directory"),
                  lambda _action=None: self.scm_do_initialize_curdir()
                 ),
-                ("scm_clone_repo", icons.STOCK_CLONE, _("Clone"), None,
+                ("scm_clone_repo", wsm_icons.STOCK_CLONE, _("Clone"), None,
                  _("Clone an existing repository."),
                  lambda _action=None: self.scm_do_clone_repo()
                 ),
             ])
         self.action_groups[AC_IN_SCM_PGND].add_actions(
             [
-                ("scm_pull_from_default_repo", icons.STOCK_PULL, _("Pull"), None,
+                ("scm_pull_from_default_repo", wsm_icons.STOCK_PULL, _("Pull"), None,
                  _("Pull from the default remote repository"),
                  lambda _action=None: self.scm_do_pull_from_default_repo()
                 ),
-                ("scm_push_to_default_repo", icons.STOCK_PUSH, _("Push"), None,
+                ("scm_push_to_default_repo", wsm_icons.STOCK_PUSH, _("Push"), None,
                  _("Push to the default remote repository"),
                  lambda _action=None: self.scm_do_push_to_default_repo()
                 ),

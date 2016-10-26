@@ -28,7 +28,7 @@ from ..bab import utils
 from ..gtx import actions
 from ..gtx import dialogue
 from ..gtx import file_tree
-from ..gtx import icons
+from .. import wsm_icons
 
 from ..bab import enotify
 

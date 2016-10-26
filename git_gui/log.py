@@ -28,7 +28,7 @@ from ..bab import utils
 
 from ..gtx import actions
 from ..gtx import table
-from ..gtx import icons
+from .. import wsm_icons
 
 from ..git_gui import ifce
 from ..git_gui import commit
@@ -85,7 +85,7 @@ class LogListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
     def populate_action_groups(self):
         self.action_groups[actions.AC_SELN_UNIQUE].add_actions(
             [
-                ("show_selected_commit", icons.STOCK_CHECKOUT, _("Show"), None,
+                ("show_selected_commit", wsm_icons.STOCK_CHECKOUT, _("Show"), None,
                  _("Show the details for the selected commit."), self._show_seln_acb),
             ])
     def get_selected_commit(self):

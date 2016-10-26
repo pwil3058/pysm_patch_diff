@@ -28,7 +28,7 @@ from ..patch_diff_gui import diff
 from ..gtx import dialogue
 from ..gtx import gutils
 from ..gtx import actions
-from ..gtx import icons
+from .. import wsm_icons
 
 class WdDiffTextWidget(diff.DiffTextsWidget, diff.FileAndRefreshActions):
     DIFF_MODES = ["git diff", "git diff --staged", "git diff HEAD"]
@@ -88,7 +88,7 @@ from ..scm_gui.actions import AC_IN_SCM_PGND
 
 actions.CLASS_INDEP_AGS[AC_IN_SCM_PGND].add_actions(
     [
-        ("git_wd_diff_dialog", icons.STOCK_DIFF, _("_Diff"), None,
+        ("git_wd_diff_dialog", wsm_icons.STOCK_DIFF, _("_Diff"), None,
          _("View diffs for the working directory"),
          lambda _action: WdDiffTextDialog()
         ),

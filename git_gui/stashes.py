@@ -32,7 +32,7 @@ from ..gtx import actions
 from ..gtx import dialogue
 from ..gtx import table
 from ..gtx import text_edit
-from ..gtx import icons
+from .. import wsm_icons
 
 from ..patch_diff_gui import diff
 
@@ -92,23 +92,23 @@ class StashListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
     def populate_action_groups(self):
         self.action_groups[actions.AC_SELN_UNIQUE].add_actions(
             [
-                ("show_selected_stash", icons.STOCK_STASH_SHOW, _("Show"), None,
+                ("show_selected_stash", wsm_icons.STOCK_STASH_SHOW, _("Show"), None,
                   _("Show the contents of the selected stash."),
                   lambda _action=None: StashDiffDialog(stash=self.get_selected_stash()).show()
                 ),
-                ("pop_selected_stash", icons.STOCK_STASH_POP, _("Pop"), None,
+                ("pop_selected_stash", wsm_icons.STOCK_STASH_POP, _("Pop"), None,
                   _("Pop the selected stash."),
                   lambda _action=None: PopStashDialog(stash=self.get_selected_stash(), parent=dialogue.main_window).show()
                 ),
-                ("apply_selected_stash", icons.STOCK_STASH_APPLY, _("Apply"), None,
+                ("apply_selected_stash", wsm_icons.STOCK_STASH_APPLY, _("Apply"), None,
                   _("Apply the selected stash."),
                   lambda _action=None: ApplyStashDialog(stash=self.get_selected_stash(), parent=dialogue.main_window).show()
                 ),
-                ("branch_selected_stash", icons.STOCK_STASH_BRANCH, _("Branch"), None,
+                ("branch_selected_stash", wsm_icons.STOCK_STASH_BRANCH, _("Branch"), None,
                   _("Branch the selected stash."),
                   lambda _action=None: BranchStashDialog(stash=self.get_selected_stash(), parent=dialogue.main_window).show()
                 ),
-                ("drop_selected_stash", icons.STOCK_STASH_DROP, _("Drop"), None,
+                ("drop_selected_stash", wsm_icons.STOCK_STASH_DROP, _("Drop"), None,
                   _("Drop the selected stash."),
                   lambda _action=None: drop_named_stash(stash=self.get_selected_stash())
                 ),
@@ -235,7 +235,7 @@ def drop_named_stash(stash):
 
 actions.CLASS_INDEP_AGS[scm_gui.actions.AC_IN_SCM_PGND].add_actions(
     [
-        ("git_stash_current_state", icons.STOCK_STASH_SAVE, _("Save"), None,
+        ("git_stash_current_state", wsm_icons.STOCK_STASH_SAVE, _("Save"), None,
          _("Stash the current state."),
          lambda _action=None: CreateStashDialog().show()
         ),

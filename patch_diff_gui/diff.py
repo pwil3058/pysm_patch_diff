@@ -30,7 +30,7 @@ from ..patch_diff import patchlib
 from ..gtx import dialogue
 from ..gtx import gutils
 from ..gtx import textview
-from ..gtx import icons
+from .. import wsm_icons
 
 class FileAndRefreshActions:
     def __init__(self):
@@ -354,7 +354,7 @@ class DiffPlusNotebook(Gtk.Notebook):
     @staticmethod
     def _file_icon_for_condition(condition):
         if not condition:
-            return icons.STOCK_FILE_PROBLEM
+            return wsm_icons.STOCK_FILE_PROBLEM
         return Gtk.STOCK_FILE
     def _populate_pages(self):
         num_tws_files = 0

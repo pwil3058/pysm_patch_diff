@@ -36,7 +36,7 @@ from ..gtx import actions
 from ..gtx import dialogue
 from ..gtx import file_tree
 from ..gtx import xtnl_edit
-from ..gtx import icons
+from .. import wsm_icons
 
 from ..git_gui import ifce
 from ..git_gui import do_opn
@@ -153,14 +153,14 @@ class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_gui.actions.WDLis
             ])
         self.action_groups[scm_gui.actions.AC_IN_SCM_PGND|pm_gui.actions.AC_NOT_PMIC|actions.AC_SELN_UNIQUE].add_actions(
             [
-                ("rename_file_in_index", icons.STOCK_RENAME, _("Rename"), None,
+                ("rename_file_in_index", wsm_icons.STOCK_RENAME, _("Rename"), None,
                  _("Rename the selected file/directory in the index (i.e. git mv)"),
                  lambda _action=None: self.git_do_rename_fsi_in_index(self.get_selected_fsi_path())
                 ),
             ])
         self.action_groups[scm_gui.actions.AC_IN_SCM_PGND|actions.AC_SELN_UNIQUE|file_tree.AC_ONLY_FILES_SELECTED].add_actions(
             [
-                ("launch_diff_tool_re_head", icons.STOCK_DIFF, _("Difftool"), None,
+                ("launch_diff_tool_re_head", wsm_icons.STOCK_DIFF, _("Difftool"), None,
                  _("Launch difftool for the selected file w.r.t. HEAD"),
                  lambda _action=None: ifce.SCM.launch_difftool("HEAD", "--", self.get_selected_fsi_path())
                 ),
