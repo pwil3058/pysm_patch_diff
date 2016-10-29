@@ -220,14 +220,6 @@ def get_ifce(dirpath=None):
     PM = _NULL_BACKEND if pgt is None else _BACKEND[pgt]
     return PM
 
-PatchData = collections.namedtuple('PatchData', ['name', 'state', 'guards'])
-
-class PatchState:
-    NOT_APPLIED = ' '
-    APPLIED_REFRESHED = '+'
-    APPLIED_NEEDS_REFRESH = '?'
-    APPLIED_UNREFRESHABLE = '!'
-
 def generic_delete_files(file_paths):
     from ..bab import os_utils
     return os_utils.os_delete_files(file_paths, events=E_FILE_DELETED)

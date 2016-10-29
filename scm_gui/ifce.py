@@ -210,7 +210,7 @@ def check_interfaces(args):
     curr_pm = pm_ifce.PM
     pm_ifce.get_ifce()
     if curr_pm != pm_ifce.PM and not enotify.E_CHANGE_WD & events:
-        from ..pm.events import E_NEW_PM
+        from ..pm import E_NEW_PM
         events |= E_NEW_PM
     return events
 
@@ -228,7 +228,7 @@ def init_current_dir(backend):
     curr_pm = pm_ifce.PM
     pm_ifce.get_ifce()
     if curr_pm != pm_ifce.PM:
-        from ..pm.events import E_NEW_PM
+        from ..pm import E_NEW_PM
         events |= E_NEW_PM
     if SCM.in_valid_pgnd:
         from ..scm_gui import wspce
@@ -270,7 +270,7 @@ def init():
         enotify.notify_events(enotify.E_CHANGE_WD, new_wd=curr_dir)
     else:
         from ..scm.events import E_NEW_SCM
-        from ..pm.events import E_NEW_PM
+        from ..pm import E_NEW_PM
         enotify.notify_events(E_NEW_SCM|E_NEW_PM)
     from ..gtx import auto_update
     auto_update.set_initialize_event_flags(check_interfaces)
