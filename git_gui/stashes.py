@@ -49,11 +49,7 @@ class StashTableData(table.TableData):
         h.update(text.encode())
         return text
     def _finalize(self, pdt):
-        self._lines = pdt.splitlines()
-    def iter_rows(self):
-        for line in self._lines:
-            m = self.RE.match(line)
-            yield StashListRow(*m.groups())
+        self._rows = (StashListRow(*self.RE.match(line).groups()) for line in pdt.splitlines())
 
 class StashListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
     class MODEL(table.MapManagedTableView.MODEL):

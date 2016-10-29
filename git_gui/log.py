@@ -41,20 +41,21 @@ class LogTableData(table.TableData):
         h.update(text.encode())
         return text
     def _finalize(self, pdt):
-        self._lines = pdt.splitlines()
-    def iter_rows(self):
-        for i, line in enumerate(self._lines):
-            chooser = i % 5
-            if chooser == 0:
-                commit = line
-            elif chooser == 1:
-                abbrevcommit = line
-            elif chooser == 2:
-                author = line
-            elif chooser == 3:
-                when = line
-            else:
-                yield LogListRow(commit=commit, abbrevcommit=abbrevcommit, author=author, when=when, subject=line)
+        self._rows = (LogListRow(*lines) for lines in utils.iter_chunks(pdt.splitlines(), 5))
+        #self._lines = pdt.splitlines()
+    #def iter_rows(self):
+        #for i, line in enumerate(self._lines):
+            #chooser = i % 5
+            #if chooser == 0:
+                #commit = line
+            #elif chooser == 1:
+                #abbrevcommit = line
+            #elif chooser == 2:
+                #author = line
+            #elif chooser == 3:
+                #when = line
+            #else:
+                #yield LogListRow(commit=commit, abbrevcommit=abbrevcommit, author=author, when=when, subject=line)
 
 class LogListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
     class MODEL(table.MapManagedTableView.MODEL):

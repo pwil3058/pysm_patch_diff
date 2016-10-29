@@ -50,7 +50,8 @@ class TagTableData(table.TableData):
         h.update(text.encode())
         return text
     def _finalize(self, pdt):
-        self._lines = pdt.splitlines()
+        # for efficiency's sake we'll use a generator here
+        self._rows = (TagListRow(name=line, annotation=self._get_annotation(line)) for line in pdt.splitlines())
     def _get_annotation(self, name):
         result = runext.run_cmd(["git", "rev-parse", name])
         result = runext.run_cmd(["git", "cat-file", "-p", result.stdout.strip()])
@@ -58,9 +59,6 @@ class TagTableData(table.TableData):
             cat_lines = result.stdout.splitlines()
             return cat_lines[5] if len(cat_lines) > 5 else ""
         return ""
-    def iter_rows(self):
-        for line in self._lines:
-            yield TagListRow(name=line, annotation=self._get_annotation(line))
 
 class TagListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
     MODEL = TagListModel

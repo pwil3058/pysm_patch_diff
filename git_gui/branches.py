@@ -79,14 +79,13 @@ class BranchTableData(table.TableData):
         return (all_branches_text, merged_branches_text)
     def _finalize(self, pdt):
         all_branches_text, merged_branches_text = pdt
-        self._lines = all_branches_text.splitlines()
         self._merged_branches = {line[2:].strip() for line in merged_branches_text.splitlines()}
-    def iter_rows(self):
-        for line in self._lines:
+        def line_to_row(line):
             is_current = line[0]
             name, rev, synopsis = self.RE.match(line[2:]).group(1, 4, 5)
             is_merged = name in self._merged_branches
-            yield BranchListRow(name=name, is_current=is_current, is_merged=is_merged, rev=rev, synopsis=synopsis)
+            return BranchListRow(name=name, is_current=is_current, is_merged=is_merged, rev=rev, synopsis=synopsis)
+        self._rows = (line_to_row(line) for line in all_branches_text.splitlines())
 
 class BranchListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin, do_opn.DoOpnMixin):
     MODEL = BranchListModel

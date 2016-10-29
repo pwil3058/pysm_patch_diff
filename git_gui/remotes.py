@@ -43,15 +43,10 @@ class RemoteRepoTableData(table.TableData):
         h.update(text.encode())
         return text
     def _finalize(self, pdt):
-        self._lines = pdt.splitlines()
-    def iter_rows(self):
-        for i, line in enumerate(self._lines):
-            m = self._VREMOTE_RE.match(line)
-            if i % 2 == 0:
-                name, inbound_url = m.group(1, 2)
-            else:
-                assert name == m.group(1)
-                yield RemotesListRow(name=name, inbound_url=inbound_url, outbound_url=m.group(2))
+        def lines_to_row(lines):
+            matches = [self._VREMOTE_RE.match(line) for line in lines]
+            return RemotesListRow(name=matches[0].group(1), inbound_url=matches[0].group(2), outbound_url=matches[0].group(2))
+        self._rows = (lines_to_row(lines) for lines in utils.iter_chunks(pdt.splitlines(), 2))
 
 class RemotesListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
     class MODEL(table.MapManagedTableView.MODEL):

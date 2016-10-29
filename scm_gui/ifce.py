@@ -19,6 +19,8 @@
 Provide an interface for the GUI to access the SCM controlling the source
 '''
 
+from ..gtx.table import NullTableData as DummyTableData
+
 _BACKEND = {}
 _MISSING_BACKEND = {}
 
@@ -68,15 +70,6 @@ def choose_scm_backend():
         return bel[0]
     from ..gtx import dialogue
     return dialogue.SelectFromListDialog(olist=bel, prompt=_('Choose SCM back end:')).make_selection()
-
-class DummyTableData:
-    is_current = True
-    def reset(self):
-        return self
-    @staticmethod
-    def iter_rows():
-        for row in []:
-            yield row
 
 class _NULL_BACKEND:
     name = "os"
