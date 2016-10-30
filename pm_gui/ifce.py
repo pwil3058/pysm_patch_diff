@@ -1,6 +1,4 @@
-### -*- coding: utf-8 -*-
-###
-###  Copyright (C) 2016 Peter Williams <pwil3058@gmail.com>
+### Copyright (C) 2010-2015 Peter Williams <pwil3058@gmail.com>
 ###
 ### This program is free software; you can redistribute it and/or modify
 ### it under the terms of the GNU General Public License as published by
@@ -16,10 +14,6 @@
 ### Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 import os
-import collections
-import hashlib
-
-from ..bab import CmdResult
 
 _BACKEND = {}
 _MISSING_BACKEND = {}
@@ -33,7 +27,7 @@ def add_backend(newifce):
 def backend_requirements():
     msg = _("No back ends are available. At least one of:") + os.linesep
     for key in list(_MISSING_BACKEND.keys()):
-        msg += '\t' + _MISSING_BACKEND[key].requires() + os.linesep
+        msg += "\t" + _MISSING_BACKEND[key].requires() + os.linesep
     msg += _("must be installed/available for \"gquilt\" to do.anything useful.")
     return msg
 
@@ -52,52 +46,11 @@ def playground_type(dirpath=None):
             return bname
     return None
 
-def create_new_playground(pgdir, backend):
+def create_new_playground(pgdir, backend=None):
     if backend:
         return _BACKEND[backend].create_new_playground(pgdir)
     else:
         return PM.create_new_playground(pgdir)
-
-class PatchListData:
-    def __init__(self, **kwargs):
-        self._kwargs = kwargs
-        h = hashlib.sha1()
-        pdt = self._get_data_text(h)
-        self._db_hash_digest = h.digest()
-        self._current_text_digest = None
-        self._finalize(pdt)
-    def __getattr__(self, name):
-        if name == "is_current": return self._is_current()
-        if name == "selected_guards": return self._selected_guards
-        raise AttributeError(name)
-    def _finalize(self, pdt):
-        assert False, "_finalize() must be defined in child"
-    def _is_current(self):
-        h = hashlib.sha1()
-        self._current_text = self._get_data_text(h)
-        self._current_text_digest = h.digest()
-        return self._current_text_digest == self._db_hash_digest
-    def reset(self):
-        if self._current_text_digest is None:
-            return self.__class__(**self._kwargs)
-        if self._current_text_digest != self._db_hash_digest:
-            self._db_hash_digest = self._current_text_digest
-            self._finalize(self._current_text)
-        return self
-    def _get_data_text(self, h):
-        assert False, "_get_data_text() must be defined in child"
-    def iter_patches(self):
-        for patch_data in self._patches_data:
-            yield patch_data
-
-class NullPatchListData:
-    def __getattr__(self, name):
-        if name == "is_current": return True
-        if name == "selected_guards": return []
-    def reset(self):
-        pass
-    def iter_patches(self):
-        return []
 
 class _NULL_BACKEND:
     name = "null"
@@ -111,6 +64,7 @@ class _NULL_BACKEND:
     is_extdiff_for_full_patch_ok = False
     is_poppable = False
     is_pushable = False
+    all_applied_patches_refreshed = False
     # no caching so no state ergo all methods will be static/class methods
     # "do" methods should never be called for the null interface
     # so we won't provide them
@@ -118,6 +72,9 @@ class _NULL_BACKEND:
     @staticmethod
     def get_applied_patches():
         return []
+    @staticmethod
+    def get_applied_patch_count():
+        return 0
     @staticmethod
     def get_author_name_and_email():
         return None
@@ -164,6 +121,7 @@ class _NULL_BACKEND:
         return []
     @staticmethod
     def get_patch_list_data():
+        from ..pm_gui import NullPatchListData
         return NullPatchListData()
     @staticmethod
     def get_patch_text(patch_name):
@@ -219,65 +177,3 @@ def get_ifce(dirpath=None):
     pgt = playground_type(dirpath)
     PM = _NULL_BACKEND if pgt is None else _BACKEND[pgt]
     return PM
-
-def generic_delete_files(file_paths):
-    from ..bab import os_utils
-    return os_utils.os_delete_files(file_paths, events=E_FILE_DELETED)
-
-def set_patch_file_description(patch_file_path, description, overwrite=False):
-    from ..patch_diff import patchlib
-    from ..bab import utils
-    if os.path.isfile(patch_file_path):
-        try:
-            patch_obj = patchlib.Patch.parse_text(utils.get_file_contents(patch_file_path))
-        except IOError as edata:
-            return CmdResult.error(stderr=str(edata))
-        except patchlib.ParseError:
-            if overwrite:
-                patch_obj = patchlib.Patch()
-            else:
-                return CmdResult.error(stderr=_("{0}: exists but is not a valid patch file".format(patch_file_path))) | CmdResult.Suggest.OVERWRITE
-    else:
-        patch_obj = patchlib.Patch()
-    patch_obj.set_description(description)
-    result = utils.set_file_contents(patch_file_path, str(patch_obj), compress=True)
-    return result
-
-def get_patch_file_description(patch_file_path):
-    assert os.path.isfile(patch_file_path), _("Patch file \"{0}\" does not exist\n").format(patch_file_path)
-    from ..patch_diff import patchlib
-    from ..bab import utils
-    pobj = patchlib.Patch.parse_text(utils.get_file_contents(patch_file_path))
-    return pobj.get_description()
-
-class InterfaceMixin:
-    @classmethod
-    def _add_extra_patch_file_paths(cls, file_paths):
-        patch_file_paths = cls.get_patch_files()
-        ep_file_paths_set = {fp for fp in file_paths if fp not in patch_file_paths}
-        if ep_file_paths_set:
-            return cls.do_add_files(ep_file_paths_set)
-        return CmdResult.ok()
-    @classmethod
-    def do_export_patch_as(cls, patch_name, export_file_name=None, force=False, overwrite=False):
-        if not force:
-            result = cls._check_patch_export_status(patch_name)
-            if result:
-                return result
-        if not export_file_name:
-            export_file_name = utils.convert_patchname_to_filename(patch_name)
-        if not overwrite and os.path.exists(export_file_name):
-            emsg = _("{0}: file already exists.\n").format(export_file_name)
-            return CmdResult.error(stderr=emsg) + CmdResult.Suggest.OVERWRITE_OR_RENAME
-        # NB we don't use shutil.copyfile() here as names may dictate (de)compression
-        return utils.set_file_contents(export_file_name, cls.get_patch_text(patch_name))
-    @classmethod
-    def do_set_patch_description(cls, patch_name, description, overwrite=False):
-        from ..gtx import console
-        result = set_patch_file_description(cls.get_patch_file_path(patch_name), description, overwrite=overwrite)
-        if result.is_ok:
-            console.LOG.append_entry(_("set description for \"{0}\" patch.\n{1}\n").format(patch_name, description))
-        return result
-    @classmethod
-    def get_patch_description(cls, patch_name):
-        return get_patch_file_description(cls.get_patch_file_path(patch_name))
