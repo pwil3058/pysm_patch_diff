@@ -13,7 +13,13 @@
 ### along with this program; if not, write to the Free Software
 ### Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
+"""
+Provide an interface for the GUI to access the PM controlling the patches
+"""
+
 import os
+
+from . import pm_wspce
 
 _BACKEND = {}
 _MISSING_BACKEND = {}
@@ -172,8 +178,132 @@ class _NULL_BACKEND:
 
 PM = _NULL_BACKEND
 
-def get_ifce(dirpath=None):
+def get_ifce(dir_path=None):
     global PM
-    pgt = playground_type(dirpath)
+    pgt = playground_type(dir_path)
     PM = _NULL_BACKEND if pgt is None else _BACKEND[pgt]
     return PM
+
+
+def init():
+    import os
+    from ..bab import options
+    from ..bab import enotify
+    orig_dir = os.getcwd()
+    options.load_global_options()
+    get_ifce()
+    if PM.in_valid_pgnd:
+        root = PM.get_playground_root()
+        os.chdir(root)
+        from ..pm_gui import pm_wspce
+        from ..gtx import recollect
+        pm_wspce.add_workspace_path(root)
+        recollect.set("workspace", "last_used", root)
+    from ..scm_gui import ifce as scm_ifce
+    scm_ifce.get_ifce()
+    curr_dir = os.getcwd()
+    options.reload_pgnd_options()
+    from ..gtx.console import LOG
+    LOG.start_cmd("Working Directory: {0}\n".format(curr_dir))
+    if PM.in_valid_pgnd:
+        LOG.append_stdout("In valid repository\n")
+    else:
+        LOG.append_stderr("NOT in valid repository\n")
+    LOG.end_cmd()
+    # NB: need to send either enotify.E_CHANGE_WD or E_NEW_PM|E_NEW_SCM to ensure action sates get set
+    if not os.path.samefile(orig_dir, curr_dir):
+        enotify.notify_events(enotify.E_CHANGE_WD, new_wd=curr_dir)
+    else:
+        from ..pm import E_NEW_PM
+        from ..scm import E_NEW_SCM
+        enotify.notify_events(E_NEW_PM|E_NEW_SCM)
+    from ..gtx import auto_update
+    auto_update.set_initialize_event_flags(check_interfaces)
+
+def init_current_dir(backend):
+    import os
+    from ..bab import enotify
+    result = create_new_playground(os.getcwd(), backend)
+    events = 0
+    curr_pm = PM
+    get_ifce()
+    if curr_pm != PM:
+        from ..pm import E_NEW_PM
+        events |= E_NEW_PM
+    from ..scm_gui import ifce as scm_ifce
+    curr_scm = scm_ifce.SCM
+    scm_ifce.get_ifce()
+    if curr_scm != scm_ifce.SCM:
+        from ..scm import E_NEW_SCM
+        events |= E_NEW_SCM
+    if PM.in_valid_pgnd:
+        from ..pm_gui import pm_wspce
+        from ..gtx import recollect
+        curr_dir = os.getcwd()
+        pm_wspce.add_workspace_path(curr_dir)
+        recollect.set("workspace", "last_used", curr_dir)
+    if events:
+        enotify.notify_events(events)
+    return result
+
+def check_interfaces(args):
+    from ..bab import enotify
+    events = 0
+    curr_pm = PM
+    get_ifce()
+    if curr_pm != PM:
+        from ..pm import E_NEW_PM
+        events |= E_NEW_PM
+        if PM.in_valid_pgnd:
+            import os
+            from ..bab import options
+            from ..gtx import recollect
+            from ..pm_gui import pm_wspce
+            newdir = PM.get_playground_root()
+            if not os.path.samefile(newdir, os.getcwd()):
+                os.chdir(newdir)
+                events |= enotify.E_CHANGE_WD
+            pm_wspce.add_workspace_path(newdir)
+            recollect.set("workspace", "last_used", newdir)
+            options.load_pgnd_options()
+    from ..scm_gui import ifce as scm_ifce
+    curr_scm = scm_ifce.SCM
+    scm_ifce.get_ifce()
+    if curr_scm != scm_ifce.SCM and not enotify.E_CHANGE_WD & events:
+        from ..scm import E_NEW_SCM
+        events |= E_NEW_SCM
+    return events
+
+def get_author_name_and_email():
+    # TODO: generalise get_author_name_and_email() and use for both SCM and PM
+    import email.utils
+    from ..bab import utils
+    from ..bab import options
+    from ..scm_gui.ifce import SCM
+    DEFAULT_NAME_EVARS = ["GECOS", "GIT_AUTHOR_NAME", "LOGNAME"]
+    DEFAULT_EMAIL_EVARS = ["EMAIL_ADDRESS", "GIT_AUTHOR_EMAIL"]
+    # first check for OUR definitions in the current pgnd
+    email_addr = options.get("user", "email", pgnd_only=True)
+    if email_addr:
+        name = options.get("user", "name")
+        return email.utils.formataddr((name if name else utils.get_first_in_envar(DEFAULT_NAME_EVARS, default="unknown"), email_addr,))
+    # then ask the managers in order of relevance
+    for mgr in [PM, SCM]:
+        anae = mgr.get_author_name_and_email()
+        if anae:
+            return anae
+    # then check for OUR global definitions
+    email_addr = options.get("user", "email")
+    if email_addr:
+        name = options.get("user", "name")
+        return email.utils.formataddr((name if name else utils.get_first_in_envar(DEFAULT_NAME_EVARS, default="unknown"), email_addr,))
+    email_addr = utils.get_first_in_envar(DEFAULT_EMAIL_EVARS, default=None)
+    if email_addr:
+        name = options.get("user", "name")
+        return email.utils.formataddr((name if name else utils.get_first_in_envar(DEFAULT_NAME_EVARS, default="unknown"), email_addr,))
+    user = os.environ.get("LOGNAME", None)
+    host = os.environ.get("HOSTNAME", None)
+    if user and host:
+        return email.utils.formataddr((user, "@".join([user, host]),))
+    else:
+        return _("Who knows? :-)")
