@@ -21,25 +21,67 @@ from gi.repository import Gtk
 
 from ..gtx import actions
 from ..gtx import apath
+from ..gtx import dialogue
 
 from ... import CONFIG_DIR_PATH
 
-class WorkspacePathView(apath.AliasPathView):
-    SAVED_FILE_NAME = os.path.join(CONFIG_DIR_PATH, "workspaces")
+SAVED_PGND_FILE_NAME = os.sep.join([CONFIG_DIR_PATH, "playgrounds"])
 
-class WorkspacePathTable(apath.AliasPathTable):
-    VIEW = WorkspacePathView
+class PgndPathView(apath.AliasPathView):
+    SAVED_FILE_NAME = SAVED_PGND_FILE_NAME
 
-class WorkspaceOpenDialog(apath.PathSelectDialog):
-    PATH_TABLE = WorkspacePathTable
-    def __init__(self, parent=None):
-        apath.PathSelectDialog.__init__(self, label=_("Workspace/Directory"), parent=parent)
+class PgndPathTable(apath.AliasPathTable):
+    VIEW = PgndPathView
 
-def generate_chdir_to_workspace_menu(label=_("Change Directory To")):
-    return WorkspacePathView.generate_alias_path_menu(label, lambda newtgnd: chdir(newtgnd))
+class PgndPathDialog(apath.PathSelectDialog):
+    PATH_TABLE = PgndPathTable
+    def __init__(self, suggestion=None, parent=None):
+        apath.PathSelectDialog.__init__(self, label=_("Playground/Directory"), suggestion=suggestion, parent=parent)
 
-def add_workspace_path(path):
-    return WorkspacePathView.append_saved_path(path)
+class AskInitPgndDialog(dialogue.QuestionDialog, dialogue.ClientMixin):
+    def __init__(self):
+        buttons = (Gtk.STOCK_NO, Gtk.ResponseType.NO, Gtk.STOCK_YES, Gtk.ResponseType.YES)
+        qtn =os.linesep.join([_("Directory {} has not been initialised.").format(os.getcwd()),
+                               _("Do you wish to initialise it?")])
+        dialogue.QuestionDialog.__init__(self, qtn=qtn, buttons=buttons)
+        self.connect("response", self._response_cb)
+    def _response_cb(self, dialog, response_id):
+        if response_id == Gtk.ResponseType.YES:
+            from ..pm_gui import ifce as pm_gui_ifce
+            req_back_end = pm_gui_ifce.choose_backend(dialog)
+            if req_back_end:
+                result = pm_gui_ifce.init_current_dir(req_back_end)
+                dialog.report_any_problems(result)
+        dialog.destroy()
+
+class PgndOpenDialog(PgndPathDialog):
+    def __init__(self, **kwargs):
+        PgndPathDialog.__init__(self, **kwargs)
+        self.connect("response", self._response_cb)
+    def _response_cb(self, open_dialog, response_id):
+        if response_id == Gtk.ResponseType.OK:
+            newpg = open_dialog.get_path()
+            if newpg:
+                with open_dialog.showing_busy():
+                    result = chdir(newpg)
+                open_dialog.report_any_problems(result)
+                if not result.is_ok:
+                    return # Give them the option to try again
+            else:
+                open_dialog.inform_user(_("\"Playground/Directory\" field must contain a directory path"))
+                return
+            open_dialog.destroy()
+            from ..pm_gui import ifce as pm_gui_ifce
+            if not pm_gui_ifce.PM.in_valid_pgnd:
+                AskInitPgndDialog().run()
+        else:
+            open_dialog.destroy()
+
+def generate_local_playground_menu(label=_("Playgrounds")):
+    return PgndPathView.generate_alias_path_menu(label, lambda newtgnd: pm_wspce.chdir(newtgnd))
+
+def add_playground_path(path):
+    return PgndPathView.append_saved_path(path)
 
 def chdir(newdir):
     from ..bab import CmdResult
@@ -64,7 +106,7 @@ def chdir(newdir):
         newdir = pm_ifce.PM.get_playground_root()
         os.chdir(newdir)
         from ..gtx import recollect
-        WorkspacePathView.append_saved_path(newdir)
+        PgndPathView.append_saved_path(newdir)
         recollect.set("workspace", "last_used", newdir)
     from ..scm_gui import ifce as scm_ifce
     scm_ifce.get_ifce()
@@ -81,20 +123,10 @@ def chdir(newdir):
     enotify.notify_events(enotify.E_CHANGE_WD, new_wd=CURDIR)
     return retval
 
-def change_wd_acb(_arg):
-    open_dialog = WorkspaceOpenDialog()
-    if open_dialog.run() == Gtk.ResponseType.OK:
-        newpg = open_dialog.get_path()
-        if newpg:
-            with open_dialog.showing_busy():
-                result = chdir(newpg)
-            open_dialog.report_any_problems(result)
-    open_dialog.destroy()
-
 actions.CLASS_INDEP_AGS[actions.AC_DONT_CARE].add_actions(
     [
         ("pm_change_wd", Gtk.STOCK_OPEN, _("Open"), "",
          _("Change current working directory"),
-         change_wd_acb
+         lambda _action: PgndOpenDialog().run()
         ),
     ])

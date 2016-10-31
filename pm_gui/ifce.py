@@ -44,6 +44,15 @@ def report_backend_requirements(parent=None):
 def avail_backends():
     return list(_BACKEND.keys())
 
+def choose_backend(helper):
+    available_backends = avail_backends()
+    if len(available_backends) == 0:
+        helper.inform_user(backend_requirements())
+        return None
+    elif len(available_backends) == 1:
+        return available_backends[0]
+    return helper.choose_from_list(alist=available_backends, prompt=_("Choose PM back end:"))
+
 def playground_type(dirpath=None):
     # TODO: cope with nested playgrounds of different type and go for closest
     # TODO: give preference to quilt if both found to allow quilt to be used on hg?
@@ -197,7 +206,7 @@ def init():
         os.chdir(root)
         from ..pm_gui import pm_wspce
         from ..gtx import recollect
-        pm_wspce.add_workspace_path(root)
+        pm_wspce.add_playground_path(root)
         recollect.set("workspace", "last_used", root)
     from ..scm_gui import ifce as scm_ifce
     scm_ifce.get_ifce()
@@ -240,7 +249,7 @@ def init_current_dir(backend):
         from ..pm_gui import pm_wspce
         from ..gtx import recollect
         curr_dir = os.getcwd()
-        pm_wspce.add_workspace_path(curr_dir)
+        pm_wspce.add_playground_path(curr_dir)
         recollect.set("workspace", "last_used", curr_dir)
     if events:
         enotify.notify_events(events)
@@ -263,7 +272,7 @@ def check_interfaces(args):
             if not os.path.samefile(newdir, os.getcwd()):
                 os.chdir(newdir)
                 events |= enotify.E_CHANGE_WD
-            pm_wspce.add_workspace_path(newdir)
+            pm_wspce.add_playground_path(newdir)
             recollect.set("workspace", "last_used", newdir)
             options.load_pgnd_options()
     from ..scm_gui import ifce as scm_ifce
