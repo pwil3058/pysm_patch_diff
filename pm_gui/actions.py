@@ -19,6 +19,7 @@ Workspace status action groups
 
 from .. import pm
 from .. import pm_gui
+from .. import scm
 
 from ..bab import enotify
 
@@ -26,6 +27,29 @@ from ..gtx import actions
 
 AC_NOT_IN_PM_PGND, AC_IN_PM_PGND, AC_IN_PM_PGND_MUTABLE, AC_IN_PM_PGND_MASK = actions.ActionCondns.new_flags_and_mask(3)
 AC_NOT_PMIC, AC_PMIC, AC_PMIC_MASK = actions.ActionCondns.new_flags_and_mask(2)
+AC_POP_POSSIBLE = AC_PMIC
+AC_PUSH_POSSIBLE, AC_PUSH_POSSIBLE_MASK = actions.ActionCondns.new_flags_and_mask(1)
+AC_ALL_APPLIED_REFRESHED, AC_ALL_APPLIED_REFRESHED_MASK = actions.ActionCondns.new_flags_and_mask(1)
+
+def get_pushable_condns():
+    return actions.MaskedCondns(AC_PUSH_POSSIBLE if pm_gui.ifce.PM.is_pushable else 0, AC_PUSH_POSSIBLE)
+
+def _update_class_indep_pushable_cb(**kwargs):
+    condns = get_pushable_condns()
+    actions.CLASS_INDEP_AGS.update_condns(condns)
+    actions.CLASS_INDEP_BGS.update_condns(condns)
+
+enotify.add_notification_cb(enotify.E_CHANGE_WD|pm.E_PATCH_LIST_CHANGES, _update_class_indep_pushable_cb)
+
+def get_absorbable_condns():
+    return actions.MaskedCondns(AC_ALL_APPLIED_REFRESHED if pm_gui.ifce.PM.all_applied_patches_refreshed else 0, AC_ALL_APPLIED_REFRESHED)
+
+def _update_class_indep_absorbable_cb(**kwargs):
+    condns = get_absorbable_condns()
+    actions.CLASS_INDEP_AGS.update_condns(condns)
+    actions.CLASS_INDEP_BGS.update_condns(condns)
+
+enotify.add_notification_cb(enotify.E_CHANGE_WD|scm.E_FILE_CHANGES|pm.E_FILE_CHANGES|pm.E_PATCH_LIST_CHANGES, _update_class_indep_absorbable_cb)
 
 def get_in_pm_pgnd_condns():
     if pm_gui.ifce.PM.in_valid_pgnd:
@@ -57,6 +81,8 @@ class WDListenerMixin:
     def __init__(self):
         self.add_notification_cb(enotify.E_CHANGE_WD|pm.E_NEW_PM, self.pm_pgnd_condns_change_cb)
         self.add_notification_cb(pm.E_PATCH_STACK_CHANGES|pm.E_NEW_PM|enotify.E_CHANGE_WD, self.pmic_condns_change_cb)
+        self.add_notification_cb(enotify.E_CHANGE_WD|pm.E_PATCH_LIST_CHANGES, self._pm_pushable_condns_change_cb)
+        self.add_notification_cb(enotify.E_CHANGE_WD|scm.E_FILE_CHANGES|pm.E_FILE_CHANGES|pm.E_PATCH_LIST_CHANGES, self._pm_absorbable_condns_change_cb)
         condn_set = get_in_pm_pgnd_condns() | get_pmic_condns()
         self.action_groups.update_condns(condn_set)
         try:
@@ -72,6 +98,20 @@ class WDListenerMixin:
             pass
     def pmic_condns_change_cb(self, **kwargs):
         condns = get_pmic_condns()
+        self.action_groups.update_condns(condns)
+        try:
+            self.button_groups.update_condns(condns)
+        except AttributeError:
+            pass
+    def _pm_pushable_condns_change_cb(self, **kwargs):
+        condns = get_pushable_condns()
+        self.action_groups.update_condns(condns)
+        try:
+            self.button_groups.update_condns(condns)
+        except AttributeError:
+            pass
+    def _pm_absorbable_condns_change_cb(self, **kwargs):
+        condns = get_absorbable_condns()
         self.action_groups.update_condns(condns)
         try:
             self.button_groups.update_condns(condns)
