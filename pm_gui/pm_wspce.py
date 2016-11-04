@@ -78,7 +78,7 @@ class PgndOpenDialog(PgndPathDialog):
             open_dialog.destroy()
 
 def generate_local_playground_menu(label=_("Playgrounds")):
-    return PgndPathView.generate_alias_path_menu(label, lambda newtgnd: pm_wspce.chdir(newtgnd))
+    return PgndPathView.generate_alias_path_menu(label, lambda newtgnd: chdir(newtgnd))
 
 def add_playground_path(path):
     return PgndPathView.append_saved_path(path)
