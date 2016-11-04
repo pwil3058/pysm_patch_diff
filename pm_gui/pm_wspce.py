@@ -23,6 +23,8 @@ from ..gtx import actions
 from ..gtx import apath
 from ..gtx import dialogue
 
+from .. import wsm_icons
+
 from ... import CONFIG_DIR_PATH
 
 SAVED_PGND_FILE_NAME = os.sep.join([CONFIG_DIR_PATH, "playgrounds"])
@@ -77,6 +79,53 @@ class PgndOpenDialog(PgndPathDialog):
         else:
             open_dialog.destroy()
 
+class NewPgndDialog(dialogue.CancelOKDialog, dialogue.ClientMixin):
+    def __init__(self, **kwargs):
+        from . import ifce as pm_gui_ifce
+        dialogue.CancelOKDialog.__init__(self, **kwargs)
+        avail_backends = pm_gui_ifce.avail_backends()
+        if not avail_backends:
+            info_label = Gtk.Label(pm_gui_ifce.backend_requirements())
+            self.get_content_area().add(info_label)
+            self.show_all()
+            return
+        if len(avail_backends) > 1:
+            self._backend = None
+            be_chooser = Gtk.ComboBoxText()
+            for abe in avail_backends:
+                be_chooser.append_text(abe)
+            be_chooser.connect("changed", self._be_chooser_change_cb)
+            hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+            hbox.pack_start(Gtk.Label(_("Choose backend:")), expand=False, fill=True, padding=0)
+            hbox.pack_start(be_chooser, expand=False, fill=True, padding=0)
+            self.get_content_area().pack_start(hbox, expand=False, fill=True, padding=0)
+        else:
+            self._backend = avail_backends[0]
+        self._path_reader = dialogue.EnterDirPathWidget(prompt=_("New Playground Directory Path:"))
+        self.get_content_area().pack_start(self._path_reader, expand=False, fill=True, padding=0)
+        self.connect("response", self._response_cb)
+        self.set_default_response(Gtk.ResponseType.OK)
+        self.show_all()
+    def _be_chooser_change_cb(self, combo):
+        self._backend = combo.get_active_text()
+    def _response_cb(self, open_dialog, response_id):
+        from . import ifce as pm_gui_ifce
+        if response_id == Gtk.ResponseType.OK:
+            if not self._backend:
+                self.inform_user(_("Required backend must be specified."))
+                return
+            if not self._path_reader.path:
+                self.inform_user(_("Directory path for new playground must be specified."))
+                return
+            with self.showing_busy():
+                result = pm_gui_ifce.create_new_playground(self._path_reader.path, self._backend)
+            self.report_any_problems(result)
+            if result.is_ok:
+                with self.showing_busy():
+                    result = chdir(self._path_reader.path)
+                self.report_any_problems(result)
+        open_dialog.destroy()
+
 def generate_local_playground_menu(label=_("Playgrounds")):
     return PgndPathView.generate_alias_path_menu(label, lambda newtgnd: chdir(newtgnd))
 
@@ -128,5 +177,9 @@ actions.CLASS_INDEP_AGS[actions.AC_DONT_CARE].add_actions(
         ("pm_change_wd", Gtk.STOCK_OPEN, _("Open"), "",
          _("Change current working directory"),
          lambda _action: PgndOpenDialog().run()
+        ),
+        ("pm_create_new_pgnd", wsm_icons.STOCK_NEW_PLAYGROUND, _("_New"), "",
+         _("Create a new intitialized playground"),
+         lambda _action=None: NewPgndDialog().run()
         ),
     ])
