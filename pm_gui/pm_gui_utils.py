@@ -19,9 +19,12 @@
 __all__ = ["PatchListData", "NullPatchListData", "InterfaceMixin"]
 __author__ = "Peter Williams <pwil3058@gmail.com>"
 
+import os
+
 from .. import pm
 
 from ..bab import CmdResult
+from ..bab import utils
 
 from ..gtx import table
 
@@ -44,18 +47,18 @@ class InterfaceMixin:
             return cls.do_add_files(ep_file_paths_set)
         return CmdResult.ok()
     @classmethod
-    def do_export_patch_as(cls, patch_name, export_file_name=None, force=False, overwrite=False):
+    def _do_export_patch_as(cls, patch_name, export_file_path=None, force=False, overwrite=False):
         if not force:
             result = cls._check_patch_export_status(patch_name)
-            if result:
+            if not result.is_ok:
                 return result
-        if not export_file_name:
-            export_file_name = utils.convert_patchname_to_filename(patch_name)
-        if not overwrite and os.path.exists(export_file_name):
-            emsg = _("{0}: file already exists.\n").format(export_file_name)
-            return CmdResult.error(stderr=emsg) + CmdResult.Suggest.OVERWRITE_OR_RENAME
+        if not export_file_path:
+            export_file_path = utils.convert_patchname_to_filename(patch_name)
+        if not overwrite and os.path.exists(export_file_path):
+            emsg = _("{0}: file already exists.\n").format(export_file_path)
+            return CmdResult.error(stderr=emsg) | CmdResult.Suggest.OVERWRITE_OR_RENAME
         # NB we don't use shutil.copyfile() here as names may dictate (de)compression
-        return utils.set_file_contents(export_file_name, cls.get_patch_text(patch_name))
+        return utils.set_file_contents(export_file_path, cls.get_patch_text(patch_name))
     @classmethod
     def do_set_patch_description(cls, patch_name, description, overwrite=False):
         from ..gtx import console
