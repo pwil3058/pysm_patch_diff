@@ -30,7 +30,7 @@ from ..gtx import actions
 from ..gtx import table
 from .. import wsm_icons
 
-from ..git_gui import ifce
+from ..git_gui import ifce as git_gui_ifce
 from ..git_gui import commit
 
 LogListRow = collections.namedtuple("LogListRow",    ["commit", "abbrevcommit", "author", "when", "subject"])
@@ -100,7 +100,7 @@ class LogListView(table.MapManagedTableView, scm_actions.WDListenerMixin):
         store, selection = self.get_selection().get_selected_rows()
         return [store.get_commit_abbrev_sha1(store.get_iter(x)) for x in selection]
     def _get_table_db(self):
-        return ifce.SCM.get_log_table_data()
+        return git_gui_ifce.SCM.get_log_table_data()
     def _show_seln_acb(self, _action):
         # TODO: make show selected commit more user friendly
         commit_hash = self.get_selected_commit()

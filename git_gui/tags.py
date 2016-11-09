@@ -32,7 +32,7 @@ from ..gtx import table
 from ..gtx import text_edit
 from .. import wsm_icons
 
-from ..git_gui import ifce
+from ..git_gui import ifce as git_gui_ifce
 
 TagListRow = collections.namedtuple("TagListRow",    ["name", "annotation"])
 
@@ -97,12 +97,12 @@ class TagListView(table.MapManagedTableView, scm_actions.WDListenerMixin):
         store, selection = self.get_selection().get_selected_rows()
         return [store.get_tag_name(store.get_iter(x)) for x in selection]
     def _get_table_db(self):
-        return ifce.SCM.get_tags_table_data()
+        return git_gui_ifce.SCM.get_tags_table_data()
     def _checkout_seln_acb(self, _action):
         # TODO: make tag checkout more user friendly
         tag = self.get_selected_tag()
         with self.showing_busy():
-            result = ifce.SCM.do_checkout_tag(tag=tag)
+            result = git_gui_ifce.SCM.do_checkout_tag(tag=tag)
         dialogue.main_window.report_any_problems(result)
     def handle_control_c_key_press_cb(self):
         clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
@@ -123,9 +123,9 @@ class MessageWidget(text_edit.MessageWidget):
       </toolbar>
     </ui>
     """
-    get_user_name_and_email = lambda _self: ifce.SCM.get_author_name_and_email()
+    get_user_name_and_email = lambda _self: git_gui_ifce.SCM.get_author_name_and_email()
     def set_initial_contents(self):
-        self.set_contents(ifce.SCM.get_commit_template())
+        self.set_contents(git_gui_ifce.SCM.get_commit_template())
 
 class AnnotationDataWidget(Gtk.VBox):
     def __init__(self):
@@ -158,7 +158,7 @@ class AnnotationDataWidget(Gtk.VBox):
         return None if not text else text
     def _toggled_cb(self, togglebutton):
         if togglebutton.get_active() and not self.key_id.get_text():
-            self.key_id.set_text(ifce.SCM.get_signing_key())
+            self.key_id.set_text(git_gui_ifce.SCM.get_signing_key())
 
 class SetTagDialog(dialogue.ReadTextAndTogglesDialog, dialogue.ClientMixin):
     PROMPT = ("Tag:")
@@ -188,7 +188,7 @@ class SetTagDialog(dialogue.ReadTextAndTogglesDialog, dialogue.ClientMixin):
             else:
                 msg = signed = key_id = None
             with self.showing_busy():
-                result = ifce.SCM.do_set_tag(tag=tag, annotated=annotated, msg=msg, signed=signed, key_id=key_id, target=self._target, force=force)
+                result = git_gui_ifce.SCM.do_set_tag(tag=tag, annotated=annotated, msg=msg, signed=signed, key_id=key_id, target=self._target, force=force)
             self.report_any_problems(result)
             if result.is_ok:
                 self.destroy()

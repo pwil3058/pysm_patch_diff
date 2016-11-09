@@ -224,13 +224,13 @@ class FetchWidget(Gtk.VBox):
     def flag_is_active(self, flag_label):
         return self._flag_btns.flag_is_active(flag_label)
     def do_fetch(self):
-        from ..git_gui import ifce
+        from ..git_gui import ifce as git_gui_ifce
         cmd = ["git", "fetch"] + self._flag_btns.get_active_flags()
         if "--all" not in cmd:
             remote = self._remote.get_active_text()
             if remote:
                 cmd += [remote] + shlex.split(self._refspec.get_text())
-        return ifce.do_action_cmd(cmd, scm.E_FETCH, None, [])
+        return git_gui_ifce.do_action_cmd(cmd, scm.E_FETCH, None, [])
 
 class FetchDialog(dialogue.CancelOKDialog, dialogue.ClientMixin):
     def __init__(self, **kwargs):

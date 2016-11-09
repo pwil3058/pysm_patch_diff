@@ -19,18 +19,18 @@ import os
 
 from ..gtx import doop
 
-from .ifce import SCM
+from . import ifce as git_gui_ifce
 
 class DoOpnMixin(doop.DoOperationMixin):
     def git_do_checkout_branch(self, branch_name):
         with self.showing_busy():
-            result = SCM.do_checkout_branch(branch=branch_name)
+            result = git_gui_ifce.SCM.do_checkout_branch(branch=branch_name)
         self.report_any_problems(result)
     def git_do_create_branch(self, branch_name, target):
-        do_op = lambda branch, force: SCM.do_create_branch(branch=branch, target=target, force=force)
+        do_op = lambda branch, force: git_gui_ifce.SCM.do_create_branch(branch=branch, target=target, force=force)
         return self.do_op_rename_force_or_cancel(branch_name, do_op)
     def git_do_add_fsis_to_index(self, fsi_paths):
-        do_op = lambda force=False: SCM.do_add_fsis_to_index(fsi_paths, force=force)
+        do_op = lambda force=False: git_gui_ifce.SCM.do_add_fsis_to_index(fsi_paths, force=force)
         return self.do_op_force_or_cancel(do_op)
     def git_do_copy_file_to_index(self, file_path):
         # TODO: move nuts and bolts down to scm_ifce_git
@@ -69,8 +69,8 @@ class DoOpnMixin(doop.DoOperationMixin):
         destn = self.ask_destination([fsi_path])
         if not destn:
             return
-        do_op = lambda destn, overwrite=False : SCM.do_rename_fsi_in_index(fsi_path, destn, overwrite=overwrite)
+        do_op = lambda destn, overwrite=False : git_gui_ifce.SCM.do_rename_fsi_in_index(fsi_path, destn, overwrite=overwrite)
         return self.do_op_rename_overwrite_or_cancel(destn, do_op)
     def git_do_remove_files_in_index(self, file_paths):
-        do_op = lambda force=False, cache=False: SCM.do_remove_files_in_index(file_paths, force=force, cache=cache)
+        do_op = lambda force=False, cache=False: git_gui_ifce.SCM.do_remove_files_in_index(file_paths, force=force, cache=cache)
         return self.do_op_cache_force_or_cancel(do_op)

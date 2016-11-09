@@ -33,7 +33,7 @@ from .. import wsm_icons
 
 from ..patch_diff_gui import diff
 
-from ..git_gui import ifce
+from ..git_gui import ifce as git_gui_ifce
 
 class StagedDiffNotebook(diff.DiffTextsWidget):
     def __init__(self):
@@ -41,7 +41,7 @@ class StagedDiffNotebook(diff.DiffTextsWidget):
     def _get_diff_text(self):
         # TODO: think about making -M a selectable option
         try:
-            return ifce.SCM.get_diff('-M', '--staged')
+            return git_gui_ifce.SCM.get_diff('-M', '--staged')
         except CmdFailure as failure:
             dialogue.main_window.report_failure(failure)
             return failure.result.stdout
@@ -66,14 +66,14 @@ class MessageWidget(text_edit.MessageWidget):
           </toolbar>
         </ui>
         '''
-    get_user_name_and_email = lambda _self: ifce.SCM.get_author_name_and_email()
+    get_user_name_and_email = lambda _self: git_gui_ifce.SCM.get_author_name_and_email()
     def populate_action_groups(self):
         self.action_groups[0].add_actions(
             [
                 ("menu_summary", None, _('_Message')),
             ])
     def set_initial_contents(self):
-        self.set_contents(ifce.SCM.get_commit_template())
+        self.set_contents(git_gui_ifce.SCM.get_commit_template())
 
 class CommitWidget(Gtk.VPaned, enotify.Listener):
     DIFF_NOTEBOOK = StagedDiffNotebook
@@ -111,7 +111,7 @@ class CommitWidget(Gtk.VPaned, enotify.Listener):
     def get_msg(self):
         return self.msg_widget.get_contents()
     def do_commit(self):
-        result = ifce.SCM.do_commit_staged_changes(self.get_msg())
+        result = git_gui_ifce.SCM.do_commit_staged_changes(self.get_msg())
         dialogue.main_window.report_any_problems(result)
         return result.is_less_than_error
     def _update_cb(self, **kwargs):
@@ -154,11 +154,11 @@ class CommitDialog(dialogue.ListenerDialog):
 class AmendCommitWidget(CommitWidget):
     def __init__(self):
         CommitWidget.__init__(self)
-        last_msg = ifce.SCM.get_commit_message()
+        last_msg = git_gui_ifce.SCM.get_commit_message()
         if last_msg:
             self.msg_widget.set_contents(last_msg)
     def do_commit(self):
-        result = ifce.SCM.do_amend_commit(self.get_msg())
+        result = git_gui_ifce.SCM.do_amend_commit(self.get_msg())
         dialogue.main_window.report_any_problems(result)
         return result.is_less_than_error
 
@@ -172,7 +172,7 @@ class ShowCommitData:
     def __init__(self, commit_hash):
         self.source_name = commit_hash
         self.num_strip_levels = 1
-        lines = ifce.SCM.get_commit_show(commit_hash).splitlines(True)
+        lines = git_gui_ifce.SCM.get_commit_show(commit_hash).splitlines(True)
         diff_starts_at = None
         self.diff_pluses = list()
         index = 0

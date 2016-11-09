@@ -32,7 +32,7 @@ from .. import wsm_icons
 
 from ..bab import enotify
 
-from ..git_gui import ifce
+from ..git_gui import ifce as git_gui_ifce
 
 class IndexFileTreeModel(file_tree.FileTreeModel):
     REPOPULATE_EVENTS = scm.E_CHECKOUT|enotify.E_CHANGE_WD
@@ -40,7 +40,7 @@ class IndexFileTreeModel(file_tree.FileTreeModel):
     AU_FILE_CHANGE_EVENT = scm.E_INDEX_MOD # event returned by auto_update() if changes found
     @staticmethod
     def _get_file_db():
-        return ifce.SCM.get_index_file_db()
+        return git_gui_ifce.SCM.get_index_file_db()
 
 class IndexFileTreeView(file_tree.FileTreeView, enotify.Listener, scm_actions.WDListenerMixin, dialogue.ClientMixin):
     MODEL = IndexFileTreeModel
@@ -88,7 +88,7 @@ class IndexFileTreeView(file_tree.FileTreeView, enotify.Listener, scm_actions.WD
         if len(file_list) == 0:
             return
         with self.showing_busy():
-            result = ifce.SCM.do_remove_files_from_index(file_list)
+            result = git_gui_ifce.SCM.do_remove_files_from_index(file_list)
         self.report_any_problems(result)
 
 class IndexFileTreeWidget(file_tree.FileTreeWidget):

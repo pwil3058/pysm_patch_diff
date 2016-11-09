@@ -38,7 +38,7 @@ from ..patch_diff_gui import diff
 
 from ..bab import utils
 
-from ..git_gui import ifce
+from ..git_gui import ifce as git_gui_ifce
 
 StashListRow = collections.namedtuple("StashListRow",    ["name", "branch", "commit"])
 
@@ -120,7 +120,7 @@ class StashListView(table.MapManagedTableView, scm_actions.WDListenerMixin):
         store, selection = self.get_selection().get_selected_rows()
         return [store.get_stash_name(store.get_iter(x)) for x in selection]
     def _get_table_db(self):
-        return ifce.SCM.get_stashes_table_data()
+        return git_gui_ifce.SCM.get_stashes_table_data()
     def handle_control_c_key_press_cb(self):
         clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         sel = utils.quoted_join(self.get_selected_stashes())
@@ -157,7 +157,7 @@ class CreateStashDialog(dialogue.Dialog):
         self.hide()
         if response_id == Gtk.ResponseType.OK:
             with dialogue.main_window.showing_busy():
-                result = ifce.SCM.do_stash_save(keep_index=self.keep_index.get_active(), include_untracked=self.include_untracked.get_active(), include_all=self.include_all.get_active(), msg=self.message.get_contents())
+                result = git_gui_ifce.SCM.do_stash_save(keep_index=self.keep_index.get_active(), include_untracked=self.include_untracked.get_active(), include_all=self.include_all.get_active(), msg=self.message.get_contents())
             dialogue.main_window.report_any_problems(result)
         self.destroy()
 
@@ -179,7 +179,7 @@ class PopStashDialog(dialogue.Dialog):
         self.hide()
         if response_id == Gtk.ResponseType.OK:
             with dialogue.main_window.showing_busy():
-                result = getattr(ifce.SCM, self.CMD)(reinstate_index=self.reinstate_index.get_active(), stash=self._stash)
+                result = getattr(git_gui_ifce.SCM, self.CMD)(reinstate_index=self.reinstate_index.get_active(), stash=self._stash)
             dialogue.main_window.report_any_problems(result)
         self.destroy()
 
@@ -202,7 +202,7 @@ class BranchStashDialog(dialogue.ReadTextDialog):
         if response_id == Gtk.ResponseType.OK:
             branch_name = self.entry.get_text()
             with dialogue.main_window.showing_busy():
-                result = ifce.SCM.do_stash_branch(branch_name=branch_name, stash=self._stash)
+                result = git_gui_ifce.SCM.do_stash_branch(branch_name=branch_name, stash=self._stash)
             dialogue.main_window.report_any_problems(result)
         self.destroy()
 
@@ -212,7 +212,7 @@ class StashDiffNotebook(diff.DiffTextsWidget):
         diff.DiffTextsWidget.__init__(self)
     def _get_diff_text(self):
         try:
-            return ifce.SCM.get_stash_diff(self._stash)
+            return git_gui_ifce.SCM.get_stash_diff(self._stash)
         except CmdFailure as failure:
             dialogue.main_window.report_failure(failure)
             return failure.result.stdout
@@ -226,7 +226,7 @@ class StashDiffDialog(diff.GenericDiffDialog):
 def drop_named_stash(stash):
     if dialogue.main_window.ask_ok_cancel(_("Confirm Drop Stash: {0}?").format(stash)):
         with dialogue.main_window.showing_busy():
-            result = ifce.SCM.do_stash_drop(stash=stash)
+            result = git_gui_ifce.SCM.do_stash_drop(stash=stash)
         dialogue.main_window.report_any_problems(result)
 
 actions.CLASS_INDEP_AGS[scm_actions.AC_IN_SCM_PGND].add_actions(
