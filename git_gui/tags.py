@@ -32,7 +32,7 @@ from ..gtx import table
 from ..gtx import text_edit
 from .. import wsm_icons
 
-from ..git_gui import ifce as git_gui_ifce
+from ..git_gui import git_gui_ifce
 
 TagListRow = collections.namedtuple("TagListRow",    ["name", "annotation"])
 

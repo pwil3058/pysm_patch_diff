@@ -32,7 +32,7 @@ from .. import wsm_icons
 
 from ..bab import enotify
 
-from ..git_gui import ifce as git_gui_ifce
+from ..git_gui import git_gui_ifce
 
 class IndexFileTreeModel(file_tree.FileTreeModel):
     REPOPULATE_EVENTS = scm.E_CHECKOUT|enotify.E_CHANGE_WD

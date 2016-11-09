@@ -38,7 +38,7 @@ from ..patch_diff_gui import diff
 
 from ..bab import utils
 
-from ..git_gui import ifce as git_gui_ifce
+from ..git_gui import git_gui_ifce
 
 StashListRow = collections.namedtuple("StashListRow",    ["name", "branch", "commit"])
 

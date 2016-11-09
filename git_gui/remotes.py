@@ -224,7 +224,7 @@ class FetchWidget(Gtk.VBox):
     def flag_is_active(self, flag_label):
         return self._flag_btns.flag_is_active(flag_label)
     def do_fetch(self):
-        from ..git_gui import ifce as git_gui_ifce
+        from ..git_gui import git_gui_ifce
         cmd = ["git", "fetch"] + self._flag_btns.get_active_flags()
         if "--all" not in cmd:
             remote = self._remote.get_active_text()

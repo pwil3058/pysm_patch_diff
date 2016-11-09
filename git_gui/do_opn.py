@@ -19,7 +19,7 @@ import os
 
 from ..gtx import doop
 
-from . import ifce as git_gui_ifce
+from . import git_gui_ifce
 
 class DoOpnMixin(doop.DoOperationMixin):
     def git_do_checkout_branch(self, branch_name):

@@ -33,7 +33,7 @@ from .. import wsm_icons
 
 from ..patch_diff_gui import diff
 
-from ..git_gui import ifce as git_gui_ifce
+from ..git_gui import git_gui_ifce
 
 class StagedDiffNotebook(diff.DiffTextsWidget):
     def __init__(self):
