@@ -35,7 +35,7 @@ from ..gtx import table
 from ..gtx import text_edit
 from ..gtx import tlview
 
-from . import ifce as pm_gui_ifce
+from . import pm_gui_ifce
 from . import actions as pm_actions
 from ..scm_gui import actions as scm_actions
 

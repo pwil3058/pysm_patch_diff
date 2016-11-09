@@ -208,8 +208,8 @@ def init():
         from ..gtx import recollect
         pm_wspce.add_playground_path(root)
         recollect.set("workspace", "last_used", root)
-    from ..scm_gui import ifce as scm_ifce
-    scm_ifce.reset_scm_ifce()
+    from ..scm_gui import scm_gui_ifce
+    scm_gui_ifce.reset_scm_ifce()
     curr_dir = os.getcwd()
     options.reload_pgnd_options()
     from ..gtx.console import LOG
@@ -239,10 +239,10 @@ def init_current_dir(backend):
     if curr_pm != PM:
         from ..pm import E_NEW_PM
         events |= E_NEW_PM
-    from ..scm_gui import ifce as scm_ifce
-    curr_scm = scm_ifce.SCM
-    scm_ifce.reset_scm_ifce()
-    if curr_scm != scm_ifce.SCM:
+    from ..scm_gui import scm_gui_ifce
+    curr_scm = scm_gui_ifce.SCM
+    scm_gui_ifce.reset_scm_ifce()
+    if curr_scm != scm_gui_ifce.SCM:
         from ..scm import E_NEW_SCM
         events |= E_NEW_SCM
     if PM.in_valid_pgnd:
@@ -275,10 +275,10 @@ def check_interfaces(args):
             pm_wspce.add_playground_path(newdir)
             recollect.set("workspace", "last_used", newdir)
             options.load_pgnd_options()
-    from ..scm_gui import ifce as scm_ifce
-    curr_scm = scm_ifce.SCM
-    scm_ifce.reset_scm_ifce()
-    if curr_scm != scm_ifce.SCM and not enotify.E_CHANGE_WD & events:
+    from ..scm_gui import scm_gui_ifce
+    curr_scm = scm_gui_ifce.SCM
+    scm_gui_ifce.reset_scm_ifce()
+    if curr_scm != scm_gui_ifce.SCM and not enotify.E_CHANGE_WD & events:
         from ..scm import E_NEW_SCM
         events |= E_NEW_SCM
     return events
@@ -288,7 +288,7 @@ def get_author_name_and_email():
     import email.utils
     from ..bab import utils
     from ..bab import options
-    from ..scm_gui.ifce import SCM
+    from ..scm_gui import scm_gui_ifce
     DEFAULT_NAME_EVARS = ["GECOS", "GIT_AUTHOR_NAME", "LOGNAME"]
     DEFAULT_EMAIL_EVARS = ["EMAIL_ADDRESS", "GIT_AUTHOR_EMAIL"]
     # first check for OUR definitions in the current pgnd
@@ -297,7 +297,7 @@ def get_author_name_and_email():
         name = options.get("user", "name")
         return email.utils.formataddr((name if name else utils.get_first_in_envar(DEFAULT_NAME_EVARS, default="unknown"), email_addr,))
     # then ask the managers in order of relevance
-    for mgr in [PM, SCM]:
+    for mgr in [PM, scm_gui_ifce.SCM]:
         anae = mgr.get_author_name_and_email()
         if anae:
             return anae

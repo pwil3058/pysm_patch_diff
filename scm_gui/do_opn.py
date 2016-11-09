@@ -21,15 +21,15 @@ from gi.repository import Gtk
 
 from .. import wsm_icons
 
-from ..scm_gui import ifce as scm_ifce
+from ..scm_gui import scm_gui_ifce
 from ..scm_gui import wspce
 
 # NB: this relies on dialogue.ClientMixin or equivalent also bein "mixed in"
 class DoOpnMixin:
     def scm_choose_backend(self):
-        available_backends = scm_ifce.avail_backends()
+        available_backends = scm_gui_ifce.avail_backends()
         if len(available_backends) == 0:
-            self.inform_user(scm_ifce.backend_requirements())
+            self.inform_user(scm_gui_ifce.backend_requirements())
             return None
         elif len(available_backends) == 1:
             return available_backends[0]
@@ -41,7 +41,7 @@ class DoOpnMixin:
             return
         new_pgnd_path = self.ask_dir_path(_("New Workspace Directory Path:"))
         if new_pgnd_path is not None:
-            result = scm_ifce.create_new_playground(new_pgnd_path, req_backend)
+            result = scm_gui_ifce.create_new_playground(new_pgnd_path, req_backend)
             self.report_any_problems(result)
             if not result.is_ok:
                 return
@@ -51,7 +51,7 @@ class DoOpnMixin:
         req_backend = self.scm_choose_backend()
         if not req_backend:
             return
-        result = scm_ifce.init_current_dir(req_backend)
+        result = scm_gui_ifce.init_current_dir(req_backend)
         self.report_any_problems(result)
     def scm_do_clone_repo(self):
         # TODO: think about doing most of scm_clone_repo() in repos
@@ -67,7 +67,7 @@ class DoOpnMixin:
                 return
             target = os.path.expanduser(clone_dialog.get_target())
             with clone_dialog.showing_busy():
-                result = scm_ifce.clone_repo_as(cloned_path, target, req_backend)
+                result = scm_gui_ifce.clone_repo_as(cloned_path, target, req_backend)
                 if result.is_less_than_error:
                     repos.add_repo_path(cloned_path)
             clone_dialog.report_any_problems(result)
@@ -80,11 +80,11 @@ class DoOpnMixin:
             clone_dialog.destroy()
     def scm_do_pull_from_default_repo(self):
         with self.showing_busy():
-            result = scm_ifce.SCM.do_pull_from_repo(None)
+            result = scm_gui_ifce.SCM.do_pull_from_repo(None)
         self.report_any_problems(result)
     def scm_do_push_to_default_repo(self):
         with self.showing_busy():
-            result = scm_ifce.SCM.do_push_to_repo(None)
+            result = scm_gui_ifce.SCM.do_push_to_repo(None)
         self.report_any_problems(result)
     def populate_action_groups(self):
         from ..gtx.actions import AC_DONT_CARE

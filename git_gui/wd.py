@@ -22,9 +22,11 @@ from gi.repository import GObject
 
 from .. import pm
 from .. import pm_gui
+from ..pm_gui import pm_gui_ifce
 
 from .. import scm
 from .. import scm_gui
+from ..scm_gui import scm_gui_ifce
 
 from ..git import git_utils
 
@@ -38,7 +40,6 @@ from ..gtx import file_tree
 from ..gtx import xtnl_edit
 from .. import wsm_icons
 
-from ..git_gui import ifce
 from ..git_gui import do_opn
 
 class WDTreeModel(file_tree.FileTreeModel):
@@ -46,7 +47,7 @@ class WDTreeModel(file_tree.FileTreeModel):
     AU_FILE_CHANGE_EVENT = scm.E_FILE_CHANGES|os_utils.E_FILE_CHANGES # event returned by auto_update() if changes found
     @staticmethod
     def _get_file_db():
-        return scm_gui.ifce.SCM.get_wd_file_db()
+        return scm_gui_ifce.SCM.get_wd_file_db()
 
 AC_ONLY_SUBMODULES_SELECTED = actions.ActionCondns.new_flag()
 
@@ -119,9 +120,9 @@ class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_gui.actions.WDLis
         self.add_notification_cb(pm.E_PATCH_STACK_CHANGES|pm.E_NEW_PM|enotify.E_CHANGE_WD, self._update_popup_cb)
         self.get_selection().connect('changed', lambda seln: self.action_groups.update_condns(get_masked_seln_conditions(seln)))
     def _update_popup_cb(self, **kwargs):
-        if pm_gui.ifce.PM.is_poppable:
+        if pm_gui_ifce.PM.is_poppable:
             self.set_popup("/pmic_files_popup")
-        elif ifce.SCM.in_valid_pgnd:
+        elif scm_gui_ifce.SCM.in_valid_pgnd:
             self.set_popup("/scmic_files_popup")
         else:
             self.set_popup(self.DEFAULT_POPUP)
@@ -162,7 +163,7 @@ class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_gui.actions.WDLis
             [
                 ("launch_diff_tool_re_head", wsm_icons.STOCK_DIFF, _("Difftool"), None,
                  _("Launch difftool for the selected file w.r.t. HEAD"),
-                 lambda _action=None: ifce.SCM.launch_difftool("HEAD", "--", self.get_selected_fsi_path())
+                 lambda _action=None: scm_gui_ifce.SCM.launch_difftool("HEAD", "--", self.get_selected_fsi_path())
                 ),
             ])
         self.action_groups[scm_gui.actions.AC_IN_SCM_PGND|pm_gui.actions.AC_NOT_PMIC|actions.AC_SELN_MADE].add_actions(
@@ -191,4 +192,4 @@ class WDFileTreeWidget(file_tree.FileTreeWidget):
     TREE_VIEW = WDTreeView
     @staticmethod
     def get_menu_prefix():
-        return ifce.SCM.name
+        return scm_gui_ifce.SCM.name

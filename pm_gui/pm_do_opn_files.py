@@ -21,7 +21,7 @@ __author__ = "Peter Williams <pwil3058@gmail.com>"
 
 from ..gtx import xtnl_edit
 
-from . import ifce as pm_gui_ifce
+from . import pm_gui_ifce
 
 class PMDoOpnFilesMixin:
     def pm_do_add_files(self, file_paths):

@@ -57,23 +57,23 @@ def chdir(newdir):
     from ..bab import enotify
     from ..bab import options
     from ..gtx.console import LOG
-    from ..scm_gui import ifce as scm_ifce
-    scm_ifce.reset_scm_ifce()
-    if scm_ifce.SCM.in_valid_pgnd:
+    from ..scm_gui import scm_gui_ifce
+    scm_gui_ifce.reset_scm_ifce()
+    if scm_gui_ifce.SCM.in_valid_pgnd:
         # move down to the root dir
-        newdir = scm_ifce.SCM.get_playground_root()
+        newdir = scm_gui_ifce.SCM.get_playground_root()
         os.chdir(newdir)
         from ..gtx import recollect
         WorkspacePathView.append_saved_path(newdir)
         recollect.set("workspace", "last_used", newdir)
-    from ..pm_gui import ifce as pm_ifce
-    pm_ifce.reset_pm_ifce()
+    from ..pm_gui import pm_gui_ifce
+    pm_gui_ifce.reset_pm_ifce()
     options.reload_pgnd_options()
     CURDIR = os.getcwd()
     LOG.start_cmd(_("New Working Directory: {0}\n").format(CURDIR))
     LOG.append_stdout(retval.stdout)
     LOG.append_stderr(retval.stderr)
-    if scm_ifce.SCM.in_valid_pgnd:
+    if scm_gui_ifce.SCM.in_valid_pgnd:
         LOG.append_stdout('In valid repository\n')
     else:
         LOG.append_stderr('NOT in valid repository\n')

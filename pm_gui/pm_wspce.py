@@ -49,7 +49,7 @@ class AskInitPgndDialog(dialogue.QuestionDialog, dialogue.ClientMixin):
         self.connect("response", self._response_cb)
     def _response_cb(self, dialog, response_id):
         if response_id == Gtk.ResponseType.YES:
-            from ..pm_gui import ifce as pm_gui_ifce
+            from ..pm_gui import pm_gui_ifce
             req_back_end = pm_gui_ifce.choose_backend(dialog)
             if req_back_end:
                 result = pm_gui_ifce.init_current_dir(req_back_end)
@@ -73,7 +73,7 @@ class PgndOpenDialog(PgndPathDialog):
                 open_dialog.inform_user(_("\"Playground/Directory\" field must contain a directory path"))
                 return
             open_dialog.destroy()
-            from ..pm_gui import ifce as pm_gui_ifce
+            from ..pm_gui import pm_gui_ifce
             if not pm_gui_ifce.PM.in_valid_pgnd:
                 AskInitPgndDialog().run()
         else:
@@ -81,7 +81,7 @@ class PgndOpenDialog(PgndPathDialog):
 
 class NewPgndDialog(dialogue.CancelOKDialog, dialogue.ClientMixin):
     def __init__(self, **kwargs):
-        from . import ifce as pm_gui_ifce
+        from . import pm_gui_ifce
         dialogue.CancelOKDialog.__init__(self, **kwargs)
         avail_backends = pm_gui_ifce.avail_backends()
         if not avail_backends:
@@ -109,7 +109,7 @@ class NewPgndDialog(dialogue.CancelOKDialog, dialogue.ClientMixin):
     def _be_chooser_change_cb(self, combo):
         self._backend = combo.get_active_text()
     def _response_cb(self, open_dialog, response_id):
-        from . import ifce as pm_gui_ifce
+        from . import pm_gui_ifce
         if response_id == Gtk.ResponseType.OK:
             if not self._backend:
                 self.inform_user(_("Required backend must be specified."))
@@ -148,23 +148,23 @@ def chdir(newdir):
     from ..bab import enotify
     from ..bab import options
     from ..gtx.console import LOG
-    from ..pm_gui import ifce as pm_ifce
-    pm_ifce.reset_pm_ifce()
-    if pm_ifce.PM.in_valid_pgnd:
+    from ..pm_gui import pm_gui_ifce
+    pm_gui_ifce.reset_pm_ifce()
+    if pm_gui_ifce.PM.in_valid_pgnd:
         # move down to the root dir
-        newdir = pm_ifce.PM.get_playground_root()
+        newdir = pm_gui_ifce.PM.get_playground_root()
         os.chdir(newdir)
         from ..gtx import recollect
         PgndPathView.append_saved_path(newdir)
         recollect.set("workspace", "last_used", newdir)
-    from ..scm_gui import ifce as scm_ifce
-    scm_ifce.reset_scm_ifce()
+    from ..scm_gui import scm_gui_ifce
+    scm_gui_ifce.reset_scm_ifce()
     options.reload_pgnd_options()
     CURDIR = os.getcwd()
     LOG.start_cmd(_("New Working Directory: {0}\n").format(CURDIR))
     LOG.append_stdout(retval.stdout)
     LOG.append_stderr(retval.stderr)
-    if pm_ifce.PM.in_valid_pgnd:
+    if pm_gui_ifce.PM.in_valid_pgnd:
         LOG.append_stdout('In valid repository\n')
     else:
         LOG.append_stderr('NOT in valid repository\n')

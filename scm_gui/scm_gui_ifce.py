@@ -199,10 +199,10 @@ def check_interfaces(args):
             wspce.add_workspace_path(newdir)
             recollect.set("workspace", "last_used", newdir)
             options.load_pgnd_options()
-    from ..pm_gui import ifce as pm_ifce
-    curr_pm = pm_ifce.PM
-    pm_ifce.reset_pm_ifce()
-    if curr_pm != pm_ifce.PM and not enotify.E_CHANGE_WD & events:
+    from ..pm_gui import pm_gui_ifce
+    curr_pm = pm_gui_ifce.PM
+    pm_gui_ifce.reset_pm_ifce()
+    if curr_pm != pm_gui_ifce.PM and not enotify.E_CHANGE_WD & events:
         from ..pm import E_NEW_PM
         events |= E_NEW_PM
     return events
@@ -217,10 +217,10 @@ def init_current_dir(backend):
     if curr_scm != SCM:
         from ..scm.events import E_NEW_SCM
         events |= E_NEW_SCM
-    from ..pm_gui import ifce as pm_ifce
-    curr_pm = pm_ifce.PM
-    pm_ifce.reset_pm_ifce()
-    if curr_pm != pm_ifce.PM:
+    from ..pm_gui import pm_gui_ifce
+    curr_pm = pm_gui_ifce.PM
+    pm_gui_ifce.reset_pm_ifce()
+    if curr_pm != pm_gui_ifce.PM:
         from ..pm import E_NEW_PM
         events |= E_NEW_PM
     if SCM.in_valid_pgnd:
@@ -247,8 +247,8 @@ def init():
         from ..gtx import recollect
         wspce.add_workspace_path(root)
         recollect.set("workspace", "last_used", root)
-    from ..pm_gui import ifce as pm_ifce
-    pm_ifce.reset_pm_ifce()
+    from ..pm_gui import pm_gui_ifce
+    pm_gui_ifce.reset_pm_ifce()
     curr_dir = os.getcwd()
     options.reload_pgnd_options()
     from ..gtx.console import LOG

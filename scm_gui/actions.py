@@ -18,7 +18,7 @@ Workspace status action groups
 '''
 
 from .. import scm
-from ..scm_gui import ifce as scm_gui_ifce
+from ..scm_gui import scm_gui_ifce
 
 from ..bab import enotify
 
