@@ -88,7 +88,7 @@ class DoOpnMixin:
         self.report_any_problems(result)
     def populate_action_groups(self):
         from ..gtx.actions import AC_DONT_CARE
-        from .actions import AC_NOT_IN_SCM_PGND, AC_IN_SCM_PGND
+        from .scm_actions import AC_NOT_IN_SCM_PGND, AC_IN_SCM_PGND
         self.action_groups[AC_DONT_CARE].add_actions(
             [
                 ("scm_create_new_workspace", wsm_icons.STOCK_NEW_WORKSPACE, _("New"), "",
