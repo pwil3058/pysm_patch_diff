@@ -173,7 +173,7 @@ class _NULL_BACKEND:
 
 SCM = _NULL_BACKEND
 
-def get_ifce(dir_path=None):
+def reset_scm_ifce(dir_path=None):
     global SCM
     pgt = playground_type(dir_path)
     SCM = _NULL_BACKEND if pgt is None else _BACKEND[pgt]
@@ -183,7 +183,7 @@ def check_interfaces(args):
     from ..bab import enotify
     events = 0
     curr_scm = SCM
-    get_ifce()
+    reset_scm_ifce()
     if curr_scm != SCM:
         from ..scm.events import E_NEW_SCM
         events |= E_NEW_SCM
@@ -201,7 +201,7 @@ def check_interfaces(args):
             options.load_pgnd_options()
     from ..pm_gui import ifce as pm_ifce
     curr_pm = pm_ifce.PM
-    pm_ifce.get_ifce()
+    pm_ifce.reset_pm_ifce()
     if curr_pm != pm_ifce.PM and not enotify.E_CHANGE_WD & events:
         from ..pm import E_NEW_PM
         events |= E_NEW_PM
@@ -213,13 +213,13 @@ def init_current_dir(backend):
     result = create_new_playground(os.getcwd(), backend)
     events = 0
     curr_scm = SCM
-    get_ifce()
+    reset_scm_ifce()
     if curr_scm != SCM:
         from ..scm.events import E_NEW_SCM
         events |= E_NEW_SCM
     from ..pm_gui import ifce as pm_ifce
     curr_pm = pm_ifce.PM
-    pm_ifce.get_ifce()
+    pm_ifce.reset_pm_ifce()
     if curr_pm != pm_ifce.PM:
         from ..pm import E_NEW_PM
         events |= E_NEW_PM
@@ -239,7 +239,7 @@ def init():
     from ..bab import enotify
     orig_dir = os.getcwd()
     options.load_global_options()
-    get_ifce()
+    reset_scm_ifce()
     if SCM.in_valid_pgnd:
         root = SCM.get_playground_root()
         os.chdir(root)
@@ -248,7 +248,7 @@ def init():
         wspce.add_workspace_path(root)
         recollect.set("workspace", "last_used", root)
     from ..pm_gui import ifce as pm_ifce
-    pm_ifce.get_ifce()
+    pm_ifce.reset_pm_ifce()
     curr_dir = os.getcwd()
     options.reload_pgnd_options()
     from ..gtx.console import LOG

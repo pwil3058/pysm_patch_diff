@@ -58,7 +58,7 @@ def chdir(newdir):
     from ..bab import options
     from ..gtx.console import LOG
     from ..scm_gui import ifce as scm_ifce
-    scm_ifce.get_ifce()
+    scm_ifce.reset_scm_ifce()
     if scm_ifce.SCM.in_valid_pgnd:
         # move down to the root dir
         newdir = scm_ifce.SCM.get_playground_root()
@@ -67,7 +67,7 @@ def chdir(newdir):
         WorkspacePathView.append_saved_path(newdir)
         recollect.set("workspace", "last_used", newdir)
     from ..pm_gui import ifce as pm_ifce
-    pm_ifce.get_ifce()
+    pm_ifce.reset_pm_ifce()
     options.reload_pgnd_options()
     CURDIR = os.getcwd()
     LOG.start_cmd(_("New Working Directory: {0}\n").format(CURDIR))
