@@ -22,7 +22,7 @@ from gi.repository import Gtk
 from gi.repository import GObject
 
 from .. import scm
-from .. import scm_gui
+from ..scm_gui import scm_actions
 
 from ..bab import enotify
 from ..bab import runext
@@ -48,7 +48,7 @@ class RemoteRepoTableData(table.TableData):
             return RemotesListRow(name=matches[0].group(1), inbound_url=matches[0].group(2), outbound_url=matches[0].group(2))
         self._rows = (lines_to_row(lines) for lines in utils.iter_chunks(pdt.splitlines(), 2))
 
-class RemotesListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
+class RemotesListView(table.MapManagedTableView, scm_actions.WDListenerMixin):
     class MODEL(table.MapManagedTableView.MODEL):
         ROW = RemotesListRow
         TYPES = ROW(name=GObject.TYPE_STRING, inbound_url=GObject.TYPE_STRING, outbound_url=GObject.TYPE_STRING,)
@@ -72,7 +72,7 @@ class RemotesListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin
     SPECIFICATION = table.simple_text_specification(MODEL, (_("Name"), "name", 0.0), (_("Inbound URL"), "inbound_url", 0.0), (_("Outbound URL"), "outbound_url", 0.0))
     def __init__(self, size_req=None):
         table.MapManagedTableView.__init__(self, size_req=size_req)
-        scm_gui.actions.WDListenerMixin.__init__(self)
+        scm_actions.WDListenerMixin.__init__(self)
         self.set_contents()
     def get_selected_remote(self):
         store, selection = self.get_selection().get_selected_rows()
@@ -255,7 +255,7 @@ class FetchDialog(dialogue.CancelOKDialog, dialogue.ClientMixin):
         else:
             self.destroy()
 
-actions.CLASS_INDEP_AGS[scm_gui.actions.AC_IN_SCM_PGND].add_actions(
+actions.CLASS_INDEP_AGS[scm_actions.AC_IN_SCM_PGND].add_actions(
     [
         ("git_fetch_from_remote", wsm_icons.STOCK_FETCH, _("Fetch"), None,
          _("Fetch from a selected remote repository"),

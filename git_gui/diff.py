@@ -84,7 +84,7 @@ class WdDiffTextDialog(dialogue.ListenerDialog):
     def _close_cb(self, dialog, response_id):
         dialog.destroy()
 
-from ..scm_gui.actions import AC_IN_SCM_PGND
+from ..scm_gui.scm_actions import AC_IN_SCM_PGND
 
 actions.CLASS_INDEP_AGS[AC_IN_SCM_PGND].add_actions(
     [

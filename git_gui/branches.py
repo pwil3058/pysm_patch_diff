@@ -21,7 +21,7 @@ from gi.repository import Gdk
 from gi.repository import GObject
 
 from .. import scm
-from .. import scm_gui
+from ..scm_gui import scm_actions
 
 from ..bab import enotify
 from ..bab import runext
@@ -87,7 +87,7 @@ class BranchTableData(table.TableData):
             return BranchListRow(name=name, is_current=is_current, is_merged=is_merged, rev=rev, synopsis=synopsis)
         self._rows = (line_to_row(line) for line in all_branches_text.splitlines())
 
-class BranchListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin, do_opn.DoOpnMixin):
+class BranchListView(table.MapManagedTableView, scm_actions.WDListenerMixin, do_opn.DoOpnMixin):
     MODEL = BranchListModel
     PopUp = "/branches_popup"
     SET_EVENTS = enotify.E_CHANGE_WD|scm.E_NEW_SCM
@@ -117,7 +117,7 @@ class BranchListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin,
     )
     def __init__(self, size_req=None):
         table.MapManagedTableView.__init__(self, size_req=size_req)
-        scm_gui.actions.WDListenerMixin.__init__(self)
+        scm_actions.WDListenerMixin.__init__(self)
         self.set_contents()
     def populate_action_groups(self):
         self.action_groups[actions.AC_SELN_UNIQUE].add_actions(
@@ -168,7 +168,7 @@ class CreateBranchDialog(dialogue.ReadTextAndToggleDialog, do_opn.DoOpnMixin):
         self.destroy()
 
 # TODO: be more fussy about when set branch enabled?
-actions.CLASS_INDEP_AGS[scm_gui.actions.AC_IN_SCM_PGND].add_actions(
+actions.CLASS_INDEP_AGS[scm_actions.AC_IN_SCM_PGND].add_actions(
     [
         ("git_branch_current_head", wsm_icons.STOCK_BRANCH, _("Branch"), None,
          _("Create a branch based on the current HEAD and (optionally) check it out"),

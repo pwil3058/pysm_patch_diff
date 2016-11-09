@@ -20,7 +20,7 @@ from gi.repository import Gtk
 from gi.repository import GObject
 
 from .. import scm
-from .. import scm_gui
+from ..scm_gui import scm_actions
 
 from ..bab import enotify
 from ..bab import runext
@@ -60,7 +60,7 @@ class TagTableData(table.TableData):
             return cat_lines[5] if len(cat_lines) > 5 else ""
         return ""
 
-class TagListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
+class TagListView(table.MapManagedTableView, scm_actions.WDListenerMixin):
     MODEL = TagListModel
     PopUp = "/tags_popup"
     SET_EVENTS = enotify.E_CHANGE_WD|scm.E_NEW_SCM
@@ -78,7 +78,7 @@ class TagListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
     SPECIFICATION = table.simple_text_specification(MODEL, (_("Name"), "name", 0.0), (_("Annotation"), "annotation", 0.0))
     def __init__(self, size_req=None):
         table.MapManagedTableView.__init__(self, size_req=size_req)
-        scm_gui.actions.WDListenerMixin.__init__(self)
+        scm_actions.WDListenerMixin.__init__(self)
         self.set_contents()
     def populate_action_groups(self):
         self.action_groups[actions.AC_SELN_UNIQUE].add_actions(
@@ -194,7 +194,7 @@ class SetTagDialog(dialogue.ReadTextAndTogglesDialog, dialogue.ClientMixin):
                 self.destroy()
 
 # TODO: be more fussy about when set tag enabled?
-actions.CLASS_INDEP_AGS[scm_gui.actions.AC_IN_SCM_PGND].add_actions(
+actions.CLASS_INDEP_AGS[scm_actions.AC_IN_SCM_PGND].add_actions(
     [
         ("git_tag_current_head", wsm_icons.STOCK_TAG, _("Tag"), None,
          _("Set a tag on the current HEAD"),

@@ -21,7 +21,7 @@ from gi.repository import Gtk
 from gi.repository import GObject
 
 from .. import scm
-from .. import scm_gui
+from ..scm_gui import scm_actions
 
 from ..bab import enotify
 from ..bab import CmdFailure
@@ -51,7 +51,7 @@ class StashTableData(table.TableData):
     def _finalize(self, pdt):
         self._rows = (StashListRow(*self.RE.match(line).groups()) for line in pdt.splitlines())
 
-class StashListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
+class StashListView(table.MapManagedTableView, scm_actions.WDListenerMixin):
     class MODEL(table.MapManagedTableView.MODEL):
         ROW = StashListRow
         TYPES = ROW(name=GObject.TYPE_STRING, branch=GObject.TYPE_STRING, commit=GObject.TYPE_STRING,)
@@ -83,7 +83,7 @@ class StashListView(table.MapManagedTableView, scm_gui.actions.WDListenerMixin):
     SPECIFICATION = table.simple_text_specification(MODEL, (_("Name"), "name", 0.0), (_("Branch"), "branch", 0.0), (_("Commit"), "commit", 0.0),)
     def __init__(self, size_req=None):
         table.MapManagedTableView.__init__(self, size_req=size_req)
-        scm_gui.actions.WDListenerMixin.__init__(self)
+        scm_actions.WDListenerMixin.__init__(self)
         self.set_contents()
     def populate_action_groups(self):
         self.action_groups[actions.AC_SELN_UNIQUE].add_actions(
@@ -229,7 +229,7 @@ def drop_named_stash(stash):
             result = ifce.SCM.do_stash_drop(stash=stash)
         dialogue.main_window.report_any_problems(result)
 
-actions.CLASS_INDEP_AGS[scm_gui.actions.AC_IN_SCM_PGND].add_actions(
+actions.CLASS_INDEP_AGS[scm_actions.AC_IN_SCM_PGND].add_actions(
     [
         ("git_stash_current_state", wsm_icons.STOCK_STASH_SAVE, _("Save"), None,
          _("Stash the current state."),

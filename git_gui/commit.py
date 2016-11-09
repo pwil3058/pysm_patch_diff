@@ -16,7 +16,7 @@
 from gi.repository import Gtk
 
 from .. import scm
-from .. import scm_gui
+from ..scm_gui import scm_actions
 
 from ..bab import enotify
 from ..bab import CmdFailure
@@ -252,7 +252,7 @@ class ShowCommitDialog(dialogue.ListenerDialog):
     def _handle_response_cb(self, dialog, response_id):
         self.destroy()
 
-actions.CLASS_INDEP_AGS[scm_gui.actions.AC_IN_SCM_PGND].add_actions(
+actions.CLASS_INDEP_AGS[scm_actions.AC_IN_SCM_PGND].add_actions(
     [
         # TODO: be more fussy about when staged commit enabled?
         ('git_commit_staged_changes', wsm_icons.STOCK_COMMIT, _('Commit'), None,

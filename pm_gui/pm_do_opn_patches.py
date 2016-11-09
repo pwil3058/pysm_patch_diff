@@ -36,8 +36,8 @@ from ..gtx import text_edit
 from ..gtx import tlview
 
 from . import pm_gui_ifce
-from . import actions as pm_actions
-from ..scm_gui import actions as scm_actions
+from . import pm_actions
+from ..scm_gui import scm_actions
 
 from .. import wsm_icons
 

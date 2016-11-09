@@ -21,7 +21,7 @@ from gi.repository import Gtk
 from gi.repository import GObject
 
 from .. import scm
-from .. import scm_gui
+from ..scm_gui import scm_actions
 
 from ..bab import utils
 
@@ -42,7 +42,7 @@ class IndexFileTreeModel(file_tree.FileTreeModel):
     def _get_file_db():
         return ifce.SCM.get_index_file_db()
 
-class IndexFileTreeView(file_tree.FileTreeView, enotify.Listener, scm_gui.actions.WDListenerMixin, dialogue.ClientMixin):
+class IndexFileTreeView(file_tree.FileTreeView, enotify.Listener, scm_actions.WDListenerMixin, dialogue.ClientMixin):
     MODEL = IndexFileTreeModel
     UI_DESCR = '''
     <ui>
@@ -72,13 +72,13 @@ class IndexFileTreeView(file_tree.FileTreeView, enotify.Listener, scm_gui.action
     def __init__(self, hide_clean=False, **kwargs):
         file_tree.FileTreeView.__init__(self, hide_clean=hide_clean)
         enotify.Listener.__init__(self)
-        scm_gui.actions.WDListenerMixin.__init__(self)
+        scm_actions.WDListenerMixin.__init__(self)
     def populate_action_groups(self):
         self.action_groups[actions.AC_DONT_CARE].add_actions(
             [
                 ('index_files_menu_files', None, _('Staged _Files')),
             ])
-        self.action_groups[scm_gui.actions.AC_IN_SCM_PGND|actions.AC_SELN_MADE].add_actions(
+        self.action_groups[scm_actions.AC_IN_SCM_PGND|actions.AC_SELN_MADE].add_actions(
             [
                 ('index_unstage_selected_files', Gtk.STOCK_REMOVE, _('_Unstage'), None,
                  _('Remove/unstage the selected files/directories from the index'), self.unstage_selected_files_acb),
