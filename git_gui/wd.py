@@ -124,7 +124,7 @@ class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_actions.WDListene
     def _update_popup_cb(self, **kwargs):
         if pm_gui_ifce.PM.is_poppable:
             self.set_popup("/pmic_files_popup")
-        elif scm_gui_ifce.SCM.in_valid_pgnd:
+        elif scm_gui_ifce.SCM.in_valid_wspce:
             self.set_popup("/scmic_files_popup")
         else:
             self.set_popup(self.DEFAULT_POPUP)
@@ -144,7 +144,7 @@ class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_actions.WDListene
             [
                 ("wd_cd_to_submodule", Gtk.STOCK_REMOVE, _("Change Directory"), None,
                  _("Chanage working directory to the selected submodule's root directory"),
-                 lambda _action=None: scm_gui.wspce.chdir(self.get_selected_fsi_path())
+                 lambda _action=None: scm_gui.scm_wspce.chdir(self.get_selected_fsi_path())
                 ),
             ])
         self.action_groups[scm_actions.AC_IN_SCM_PGND|AC_ONLY_SUBMODULES_SELECTED|actions.AC_SELN_MADE].add_actions(

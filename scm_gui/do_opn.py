@@ -22,7 +22,7 @@ from gi.repository import Gtk
 from .. import wsm_icons
 
 from ..scm_gui import scm_gui_ifce
-from ..scm_gui import wspce
+from ..scm_gui import scm_wspce
 
 # NB: this relies on dialogue.ClientMixin or equivalent also bein "mixed in"
 class DoOpnMixin:
@@ -45,7 +45,7 @@ class DoOpnMixin:
             self.report_any_problems(result)
             if not result.is_ok:
                 return
-            result = wspce.chdir(new_pgnd_path)
+            result = scm_wspce.chdir(new_pgnd_path)
             self.report_any_problems(result)
     def scm_do_initialize_curdir(self):
         req_backend = self.scm_choose_backend()
@@ -73,7 +73,7 @@ class DoOpnMixin:
             clone_dialog.report_any_problems(result)
             if os.path.isdir(target):
                 with clone_dialog.showing_busy():
-                    result = wspce.chdir(target)
+                    result = scm_wspce.chdir(target)
                 clone_dialog.report_any_problems(result)
             clone_dialog.destroy()
         else:

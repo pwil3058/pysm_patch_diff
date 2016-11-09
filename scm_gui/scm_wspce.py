@@ -59,7 +59,7 @@ def chdir(newdir):
     from ..gtx.console import LOG
     from ..scm_gui import scm_gui_ifce
     scm_gui_ifce.reset_scm_ifce()
-    if scm_gui_ifce.SCM.in_valid_pgnd:
+    if scm_gui_ifce.SCM.in_valid_wspce:
         # move down to the root dir
         newdir = scm_gui_ifce.SCM.get_playground_root()
         os.chdir(newdir)
@@ -73,7 +73,7 @@ def chdir(newdir):
     LOG.start_cmd(_("New Working Directory: {0}\n").format(CURDIR))
     LOG.append_stdout(retval.stdout)
     LOG.append_stderr(retval.stderr)
-    if scm_gui_ifce.SCM.in_valid_pgnd:
+    if scm_gui_ifce.SCM.in_valid_wspce:
         LOG.append_stdout('In valid repository\n')
     else:
         LOG.append_stderr('NOT in valid repository\n')

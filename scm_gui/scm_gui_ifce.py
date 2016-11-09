@@ -74,7 +74,7 @@ def choose_scm_backend():
 class _NULL_BACKEND:
     name = "os"
     cmd_label = "null"
-    in_valid_pgnd = False
+    in_valid_wspce = False
     pgnd_is_mutable = False
     @staticmethod
     def copy_clean_version_to(filepath, target_name):
@@ -187,16 +187,16 @@ def check_interfaces(args):
     if curr_scm != SCM:
         from ..scm.events import E_NEW_SCM
         events |= E_NEW_SCM
-        if SCM.in_valid_pgnd:
+        if SCM.in_valid_wspce:
             import os
             from ..bab import options
             from ..gtx import recollect
-            from ..scm_gui import wspce
+            from ..scm_gui import scm_wspce
             newdir = SCM.get_playground_root()
             if not os.path.samefile(newdir, os.getcwd()):
                 os.chdir(newdir)
                 events |= enotify.E_CHANGE_WD
-            wspce.add_workspace_path(newdir)
+            scm_wspce.add_workspace_path(newdir)
             recollect.set("workspace", "last_used", newdir)
             options.load_pgnd_options()
     from ..pm_gui import pm_gui_ifce
@@ -223,11 +223,11 @@ def init_current_dir(backend):
     if curr_pm != pm_gui_ifce.PM:
         from ..pm import E_NEW_PM
         events |= E_NEW_PM
-    if SCM.in_valid_pgnd:
-        from ..scm_gui import wspce
+    if SCM.in_valid_wspce:
+        from ..scm_gui import scm_wspce
         from ..gtx import recollect
         curr_dir = os.getcwd()
-        wspce.add_workspace_path(curr_dir)
+        scm_wspce.add_workspace_path(curr_dir)
         recollect.set("workspace", "last_used", curr_dir)
     if events:
         enotify.notify_events(events)
@@ -240,12 +240,12 @@ def init():
     orig_dir = os.getcwd()
     options.load_global_options()
     reset_scm_ifce()
-    if SCM.in_valid_pgnd:
+    if SCM.in_valid_wspce:
         root = SCM.get_playground_root()
         os.chdir(root)
-        from ..scm_gui import wspce
+        from ..scm_gui import scm_wspce
         from ..gtx import recollect
-        wspce.add_workspace_path(root)
+        scm_wspce.add_workspace_path(root)
         recollect.set("workspace", "last_used", root)
     from ..pm_gui import pm_gui_ifce
     pm_gui_ifce.reset_pm_ifce()
@@ -253,7 +253,7 @@ def init():
     options.reload_pgnd_options()
     from ..gtx.console import LOG
     LOG.start_cmd("Working Directory: {0}\n".format(curr_dir))
-    if SCM.in_valid_pgnd:
+    if SCM.in_valid_wspce:
         LOG.append_stdout('In valid repository\n')
     else:
         LOG.append_stderr('NOT in valid repository\n')

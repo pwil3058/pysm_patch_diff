@@ -27,7 +27,7 @@ from ..gtx import actions
 AC_NOT_IN_SCM_PGND, AC_IN_SCM_PGND, AC_IN_SCM_PGND_MASK = actions.ActionCondns.new_flags_and_mask(2)
 
 def get_in_scm_pgnd_condns():
-    return actions.MaskedCondns(AC_IN_SCM_PGND if scm_gui_ifce.SCM.in_valid_pgnd else AC_NOT_IN_SCM_PGND, AC_IN_SCM_PGND_MASK)
+    return actions.MaskedCondns(AC_IN_SCM_PGND if scm_gui_ifce.SCM.in_valid_wspce else AC_NOT_IN_SCM_PGND, AC_IN_SCM_PGND_MASK)
 
 def _update_class_indep_scm_pgnd_cb(**kwargs):
     condns = get_in_scm_pgnd_condns()
