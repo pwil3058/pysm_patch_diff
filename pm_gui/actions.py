@@ -18,7 +18,7 @@ Workspace status action groups
 '''
 
 from .. import pm
-from .. import pm_gui
+from ..pm_gui import ifce as pm_gui_ifce
 from .. import scm
 
 from ..bab import enotify
@@ -32,7 +32,7 @@ AC_PUSH_POSSIBLE, AC_PUSH_POSSIBLE_MASK = actions.ActionCondns.new_flags_and_mas
 AC_ALL_APPLIED_REFRESHED, AC_ALL_APPLIED_REFRESHED_MASK = actions.ActionCondns.new_flags_and_mask(1)
 
 def get_pushable_condns():
-    return actions.MaskedCondns(AC_PUSH_POSSIBLE if pm_gui.ifce.PM.is_pushable else 0, AC_PUSH_POSSIBLE)
+    return actions.MaskedCondns(AC_PUSH_POSSIBLE if pm_gui_ifce.PM.is_pushable else 0, AC_PUSH_POSSIBLE)
 
 def _update_class_indep_pushable_cb(**kwargs):
     condns = get_pushable_condns()
@@ -42,7 +42,7 @@ def _update_class_indep_pushable_cb(**kwargs):
 enotify.add_notification_cb(enotify.E_CHANGE_WD|pm.E_PATCH_LIST_CHANGES, _update_class_indep_pushable_cb)
 
 def get_absorbable_condns():
-    return actions.MaskedCondns(AC_ALL_APPLIED_REFRESHED if pm_gui.ifce.PM.all_applied_patches_refreshed else 0, AC_ALL_APPLIED_REFRESHED)
+    return actions.MaskedCondns(AC_ALL_APPLIED_REFRESHED if pm_gui_ifce.PM.all_applied_patches_refreshed else 0, AC_ALL_APPLIED_REFRESHED)
 
 def _update_class_indep_absorbable_cb(**kwargs):
     condns = get_absorbable_condns()
@@ -52,8 +52,8 @@ def _update_class_indep_absorbable_cb(**kwargs):
 enotify.add_notification_cb(enotify.E_CHANGE_WD|scm.E_FILE_CHANGES|pm.E_FILE_CHANGES|pm.E_PATCH_LIST_CHANGES, _update_class_indep_absorbable_cb)
 
 def get_in_pm_pgnd_condns():
-    if pm_gui.ifce.PM.in_valid_pgnd:
-        if pm_gui.ifce.PM.pgnd_is_mutable:
+    if pm_gui_ifce.PM.in_valid_pgnd:
+        if pm_gui_ifce.PM.pgnd_is_mutable:
             conds = AC_IN_PM_PGND | AC_IN_PM_PGND_MUTABLE
         else:
             conds = AC_IN_PM_PGND
@@ -62,7 +62,7 @@ def get_in_pm_pgnd_condns():
     return actions.MaskedCondns(conds, AC_IN_PM_PGND_MASK)
 
 def get_pmic_condns():
-    return actions.MaskedCondns(AC_PMIC if pm_gui.ifce.PM.is_poppable else AC_NOT_PMIC, AC_PMIC_MASK)
+    return actions.MaskedCondns(AC_PMIC if pm_gui_ifce.PM.is_poppable else AC_NOT_PMIC, AC_PMIC_MASK)
 
 def _update_class_indep_pm_pgnd_cb(**kwargs):
     condns = get_in_pm_pgnd_condns()
@@ -83,7 +83,7 @@ class WDListenerMixin:
         self.add_notification_cb(pm.E_PATCH_STACK_CHANGES|pm.E_NEW_PM|enotify.E_CHANGE_WD, self.pmic_condns_change_cb)
         self.add_notification_cb(enotify.E_CHANGE_WD|pm.E_PATCH_LIST_CHANGES, self._pm_pushable_condns_change_cb)
         self.add_notification_cb(enotify.E_CHANGE_WD|scm.E_FILE_CHANGES|pm.E_FILE_CHANGES|pm.E_PATCH_LIST_CHANGES, self._pm_absorbable_condns_change_cb)
-        condn_set = get_in_pm_pgnd_condns() | get_pmic_condns()
+        condn_set = get_in_pm_pgnd_condns() | get_pmic_condns() | get_absorbable_condns() | get_pushable_condns()
         self.action_groups.update_condns(condn_set)
         try:
             self.button_groups.update_condns(condn_set)
@@ -117,3 +117,7 @@ class WDListenerMixin:
             self.button_groups.update_condns(condns)
         except AttributeError:
             pass
+
+condns = get_in_pm_pgnd_condns() | get_pmic_condns() | get_absorbable_condns() | get_pushable_condns()
+actions.CLASS_INDEP_AGS.update_condns(condns)
+actions.CLASS_INDEP_BGS.update_condns(condns)
