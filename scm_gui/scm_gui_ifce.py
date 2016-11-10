@@ -185,7 +185,7 @@ def check_interfaces(args):
     curr_scm = SCM
     reset_scm_ifce()
     if curr_scm != SCM:
-        from ..scm.events import E_NEW_SCM
+        from ..scm import E_NEW_SCM
         events |= E_NEW_SCM
         if SCM.in_valid_wspce:
             import os
@@ -215,7 +215,7 @@ def init_current_dir(backend):
     curr_scm = SCM
     reset_scm_ifce()
     if curr_scm != SCM:
-        from ..scm.events import E_NEW_SCM
+        from ..scm import E_NEW_SCM
         events |= E_NEW_SCM
     from ..pm_gui import pm_gui_ifce
     curr_pm = pm_gui_ifce.PM
@@ -262,7 +262,7 @@ def init():
     if not os.path.samefile(orig_dir, curr_dir):
         enotify.notify_events(enotify.E_CHANGE_WD, new_wd=curr_dir)
     else:
-        from ..scm.events import E_NEW_SCM
+        from ..scm import E_NEW_SCM
         from ..pm import E_NEW_PM
         enotify.notify_events(E_NEW_SCM|E_NEW_PM)
     from ..gtx import auto_update
