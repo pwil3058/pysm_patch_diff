@@ -176,14 +176,14 @@ class Interface:
             cmd = ["git", "rm", "--cache", "--"] + file_list
         else:
             cmd = ["git", "rm", "--"] + file_list
-        return do_action_cmd(cmd, scm.E_INDEX_MOD, None, [("--cache", CmdResult.Suggest.CACHE), ("or -f to force removal", CmdResult.Suggest.FORCE)])
+        return do_action_cmd(cmd, scm.E_INDEX_MOD|scm.E_FILE_CHANGES, None, [("--cache", CmdResult.Suggest.CACHE), ("or -f to force removal", CmdResult.Suggest.FORCE)])
     @staticmethod
     def do_rename_fsi_in_index(fsi_path, destn, overwrite=False):
         if overwrite:
             cmd = ["git", "mv", "-f", fsi_path, destn]
         else:
             cmd = ["git", "mv", fsi_path, destn]
-        return do_action_cmd(cmd, scm.E_INDEX_MOD, None, [("or -f to force", CmdResult.Suggest.OVERWRITE)])
+        return do_action_cmd(cmd, scm.E_INDEX_MOD|scm.E_FILE_CHANGES, None, [("or -f to force", CmdResult.Suggest.OVERWRITE)])
     @staticmethod
     def do_set_tag(tag, annotated=False, msg=None, signed=False, key_id=None, target=None, force=False):
         cmd = ["git", "tag"]
