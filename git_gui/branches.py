@@ -33,7 +33,7 @@ from ..gtx import table
 from ..gtx import tlview
 from .. import wsm_icons
 
-from ..git_gui import do_opn
+from ..git_gui import git_do_opn
 
 BranchListRow = collections.namedtuple("BranchListRow", ["name", "is_current", "is_merged", "rev", "synopsis"])
 
@@ -87,7 +87,7 @@ class BranchTableData(table.TableData):
             return BranchListRow(name=name, is_current=is_current, is_merged=is_merged, rev=rev, synopsis=synopsis)
         self._rows = (line_to_row(line) for line in all_branches_text.splitlines())
 
-class BranchListView(table.MapManagedTableView, scm_actions.WDListenerMixin, do_opn.DoOpnMixin):
+class BranchListView(table.MapManagedTableView, scm_actions.WDListenerMixin, git_do_opn.DoOpnMixin):
     MODEL = BranchListModel
     PopUp = "/branches_popup"
     SET_EVENTS = enotify.E_CHANGE_WD|scm.E_NEW_SCM
@@ -150,7 +150,7 @@ class BranchListView(table.MapManagedTableView, scm_actions.WDListenerMixin, do_
 class BranchList(table.TableWidget):
     VIEW = BranchListView
 
-class CreateBranchDialog(dialogue.ReadTextAndToggleDialog, do_opn.DoOpnMixin):
+class CreateBranchDialog(dialogue.ReadTextAndToggleDialog, git_do_opn.DoOpnMixin):
     def __init__(self, target=None, parent=None):
         self._target = target
         dialogue.ReadTextAndToggleDialog.__init__(self, title=_("git: Set Branch"),

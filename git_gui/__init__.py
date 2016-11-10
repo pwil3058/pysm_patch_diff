@@ -23,6 +23,6 @@ from . import stashes
 from . import remotes
 from . import log
 from . import commit
-from . import do_opn
+from . import git_do_opn
 from . import index
 from . import wd

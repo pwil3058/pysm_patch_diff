@@ -42,7 +42,7 @@ from ..gtx import file_tree
 from ..gtx import xtnl_edit
 from .. import wsm_icons
 
-from ..git_gui import do_opn
+from ..git_gui import git_do_opn
 
 class WDTreeModel(file_tree.FileTreeModel):
     UPDATE_EVENTS = os_utils.E_FILE_CHANGES|scm.E_NEW_SCM|scm.E_FILE_CHANGES|pm.E_FILE_CHANGES|pm.E_PATCH_STACK_CHANGES|pm.E_PATCH_REFRESH|pm.E_POP|pm.E_PUSH|scm.E_WD_CHANGES
@@ -63,7 +63,7 @@ def get_masked_seln_conditions(seln):
             return actions.MaskedCondns(0, AC_ONLY_SUBMODULES_SELECTED)
     return actions.MaskedCondns(AC_ONLY_SUBMODULES_SELECTED, AC_ONLY_SUBMODULES_SELECTED)
 
-class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_actions.WDListenerMixin, pm_actions.WDListenerMixin, do_opn.DoOpnMixin):
+class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_actions.WDListenerMixin, pm_actions.WDListenerMixin, git_do_opn.DoOpnMixin):
     MODEL = WDTreeModel
     UI_DESCR = \
     """
