@@ -15,4 +15,8 @@
 ### along with this program; if not, write to the Free Software
 ### Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
+from ..gtx import recollect
+
 from . pm_gui_utils import *
+
+recollect.define("playground", "last_used", recollect.Defn(str, ""))

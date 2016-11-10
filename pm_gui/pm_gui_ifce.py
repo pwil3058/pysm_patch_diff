@@ -207,7 +207,7 @@ def init():
         from ..pm_gui import pm_wspce
         from ..gtx import recollect
         pm_wspce.add_playground_path(root)
-        recollect.set("workspace", "last_used", root)
+        recollect.set("playground", "last_used", root)
     from ..scm_gui import scm_gui_ifce
     scm_gui_ifce.reset_scm_ifce()
     curr_dir = os.getcwd()
@@ -250,7 +250,7 @@ def init_current_dir(backend):
         from ..gtx import recollect
         curr_dir = os.getcwd()
         pm_wspce.add_playground_path(curr_dir)
-        recollect.set("workspace", "last_used", curr_dir)
+        recollect.set("playground", "last_used", curr_dir)
     if events:
         enotify.notify_events(events)
     return result
@@ -273,7 +273,7 @@ def check_interfaces(args):
                 os.chdir(newdir)
                 events |= enotify.E_CHANGE_WD
             pm_wspce.add_playground_path(newdir)
-            recollect.set("workspace", "last_used", newdir)
+            recollect.set("playground", "last_used", newdir)
             options.load_pgnd_options()
     from ..scm_gui import scm_gui_ifce
     curr_scm = scm_gui_ifce.SCM
