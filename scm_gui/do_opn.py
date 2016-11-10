@@ -54,12 +54,12 @@ class DoOpnMixin:
         result = scm_gui_ifce.init_current_dir(req_backend)
         self.report_any_problems(result)
     def scm_do_clone_repo(self):
-        # TODO: think about doing most of scm_clone_repo() in repos
+        # TODO: think about doing most of scm_clone_repo() in scm_repos
         req_backend = self.scm_choose_backend()
         if not req_backend:
             return
-        from ..scm_gui import repos
-        clone_dialog = repos.RepoSelectDialog(self.get_toplevel())
+        from ..scm_gui import scm_repos
+        clone_dialog = scm_repos.RepoSelectDialog(self.get_toplevel())
         if clone_dialog.run() == Gtk.ResponseType.OK:
             cloned_path = clone_dialog.get_path()
             if not cloned_path:
@@ -69,7 +69,7 @@ class DoOpnMixin:
             with clone_dialog.showing_busy():
                 result = scm_gui_ifce.clone_repo_as(cloned_path, target, req_backend)
                 if result.is_less_than_error:
-                    repos.add_repo_path(cloned_path)
+                    scm_repos.add_repo_path(cloned_path)
             clone_dialog.report_any_problems(result)
             if os.path.isdir(target):
                 with clone_dialog.showing_busy():
