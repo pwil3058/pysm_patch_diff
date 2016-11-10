@@ -39,7 +39,7 @@ def _update_class_indep_pushable_cb(**kwargs):
     actions.CLASS_INDEP_AGS.update_condns(condns)
     actions.CLASS_INDEP_BGS.update_condns(condns)
 
-enotify.add_notification_cb(enotify.E_CHANGE_WD|pm.E_PATCH_LIST_CHANGES, _update_class_indep_pushable_cb)
+enotify.add_notification_cb(enotify.E_CHANGE_WD|pm.E_PATCH_LIST_CHANGES|pm.E_NEW_PM, _update_class_indep_pushable_cb)
 
 def get_absorbable_condns():
     return actions.MaskedCondns(AC_ALL_APPLIED_REFRESHED if pm_gui_ifce.PM.all_applied_patches_refreshed else 0, AC_ALL_APPLIED_REFRESHED)
@@ -49,7 +49,7 @@ def _update_class_indep_absorbable_cb(**kwargs):
     actions.CLASS_INDEP_AGS.update_condns(condns)
     actions.CLASS_INDEP_BGS.update_condns(condns)
 
-enotify.add_notification_cb(enotify.E_CHANGE_WD|scm.E_FILE_CHANGES|pm.E_FILE_CHANGES|pm.E_PATCH_LIST_CHANGES, _update_class_indep_absorbable_cb)
+enotify.add_notification_cb(enotify.E_CHANGE_WD|scm.E_FILE_CHANGES|pm.E_FILE_CHANGES|pm.E_PATCH_LIST_CHANGES|pm.E_NEW_PM, _update_class_indep_absorbable_cb)
 
 def get_in_pm_pgnd_condns():
     if pm_gui_ifce.PM.in_valid_pgnd:
@@ -81,8 +81,8 @@ class WDListenerMixin:
     def __init__(self):
         self.add_notification_cb(enotify.E_CHANGE_WD|pm.E_NEW_PM, self.pm_pgnd_condns_change_cb)
         self.add_notification_cb(pm.E_PATCH_STACK_CHANGES|pm.E_NEW_PM|enotify.E_CHANGE_WD, self.pmic_condns_change_cb)
-        self.add_notification_cb(enotify.E_CHANGE_WD|pm.E_PATCH_LIST_CHANGES, self._pm_pushable_condns_change_cb)
-        self.add_notification_cb(enotify.E_CHANGE_WD|scm.E_FILE_CHANGES|pm.E_FILE_CHANGES|pm.E_PATCH_LIST_CHANGES, self._pm_absorbable_condns_change_cb)
+        self.add_notification_cb(enotify.E_CHANGE_WD|pm.E_PATCH_LIST_CHANGES|pm.E_NEW_PM, self._pm_pushable_condns_change_cb)
+        self.add_notification_cb(enotify.E_CHANGE_WD|scm.E_FILE_CHANGES|pm.E_FILE_CHANGES|pm.E_PATCH_LIST_CHANGES|pm.E_NEW_PM, self._pm_absorbable_condns_change_cb)
         condn_set = get_in_pm_pgnd_condns() | get_pmic_condns() | get_absorbable_condns() | get_pushable_condns()
         self.action_groups.update_condns(condn_set)
         try:
