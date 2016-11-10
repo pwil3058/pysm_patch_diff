@@ -95,4 +95,3 @@ class IndexFileTreeWidget(file_tree.FileTreeWidget):
     MENUBAR = "/index_files_menubar"
     BUTTON_BAR_ACTIONS = ["hide_clean_files"]
     TREE_VIEW = IndexFileTreeView
-    #SIZE = (240, 320)
