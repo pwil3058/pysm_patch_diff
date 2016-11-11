@@ -35,6 +35,8 @@ from ..gtx import table
 from ..gtx import text_edit
 from ..gtx import tlview
 
+from .. import pm
+
 from . import pm_gui_ifce
 from . import pm_actions
 from ..scm_gui import scm_actions
@@ -51,7 +53,7 @@ class PMDoOpnPatchesMixin:
         DuplicatePatchDialog(patch_name, parent=self.get_toplevel()).run()
 
     def pm_do_export_named_patch(self, patch_name):
-        suggestion = os.path.basename(utils.convert_patchname_to_filename(patch_name))
+        suggestion = os.path.basename(pm.convert_patchname_to_filename(patch_name))
         if not os.path.dirname(suggestion):
             suggestion = os.path.join(recollect.get("export", "last_directory"), suggestion)
         PROMPT = _("Export as ...")

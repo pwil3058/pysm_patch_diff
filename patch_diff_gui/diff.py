@@ -32,6 +32,8 @@ from ..gtx import gutils
 from ..gtx import textview
 from .. import wsm_icons
 
+options.define("diff", "extdiff", options.Defn(str, None, _("The name of external application for viewing diffs")))
+
 class FileAndRefreshActions:
     def __init__(self):
         self._action_group = Gtk.ActionGroup("diff_file_and_refresh")

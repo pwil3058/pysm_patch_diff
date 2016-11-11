@@ -24,6 +24,7 @@ import os
 from .. import pm
 
 from ..bab import CmdResult
+from ..bab import options
 from ..bab import utils
 
 from ..gtx import table
@@ -53,7 +54,7 @@ class InterfaceMixin:
             if not result.is_ok:
                 return result
         if not export_file_path:
-            export_file_path = utils.convert_patchname_to_filename(patch_name)
+            export_file_path = pm.convert_patchname_to_filename(patch_name)
         if not overwrite and os.path.exists(export_file_path):
             emsg = _("{0}: file already exists.\n").format(export_file_path)
             return CmdResult.error(stderr=emsg) | CmdResult.Suggest.OVERWRITE_OR_RENAME

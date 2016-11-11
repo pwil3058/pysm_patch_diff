@@ -23,6 +23,9 @@ from ..gtx import xtnl_edit
 
 from . import pm_gui_ifce
 
+from ..bab import options
+options.define("reconcile", "tool", options.Defn(str, "meld", _("The name of external application for reconciling conflicts")))
+
 class PMDoOpnFilesMixin:
     def pm_do_add_files(self, file_paths):
         do_op = lambda absorb=False, force=False : pm_gui_ifce.PM.do_add_files_to_top_patch(file_paths, absorb=absorb, force=force)
@@ -102,7 +105,6 @@ class PMDoOpnFilesMixin:
 
     @staticmethod
     def _launch_reconciliation_tool(file_a, file_b, file_c):
-        from ..bab import options
         from ..bab import runext
         from ..bab import CmdResult
         reconciler = options.get("reconcile", "tool")

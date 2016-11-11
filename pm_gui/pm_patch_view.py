@@ -86,7 +86,7 @@ class Dialogue(dialogue.ListenerDialog):
         self.auc = gutils.TimeOutController(toggle_data=self.AUTO_UPDATE_TD, function=self._update_display_cb, is_on=False, interval=10000)
         self.action_area.pack_start(gutils.ActionCheckButton(self.auc.toggle_action), expand=True, fill=True, padding=0)
         self.action_area.pack_start(refresh_button, expand=True, fill=True, padding=0)
-        self._save_file = utils.convert_patchname_to_filename(patch_name)
+        self._save_file = pm.convert_patchname_to_filename(patch_name)
         self.save_action = Gtk.Action("patch_view_save", _("Export"), _("Export current content to text file."), Gtk.STOCK_SAVE_AS)
         self.save_action.connect("activate", self._save_as_acb)
         save_button = gutils.ActionButton(self.save_action)
@@ -108,7 +108,7 @@ class Dialogue(dialogue.ListenerDialog):
         dialogue.main_window.report_any_problems(result)
     def _save_as_acb(self, _action):
         from ..gtx import recollect
-        suggestion = os.path.basename(utils.convert_patchname_to_filename(self._widget.patch_name))
+        suggestion = os.path.basename(pm.convert_patchname_to_filename(self._widget.patch_name))
         export_filepath = os.path.join(recollect.get("export", "last_directory"), suggestion)
         while True:
             export_filepath = dialogue.main_window.ask_file_path(_("Export as ..."), suggestion=export_filepath, existing=False)
