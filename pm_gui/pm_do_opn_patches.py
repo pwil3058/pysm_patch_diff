@@ -43,6 +43,9 @@ from .. import wsm_icons
 
 from ... import APP_NAME
 
+recollect.define("export", "last_directory", recollect.Defn(str, ""))
+recollect.define("import", "last_directory", recollect.Defn(str, ""))
+
 class PMDoOpnPatchesMixin:
     def pm_do_duplicate_patch(self, patch_name):
         DuplicatePatchDialog(patch_name, parent=self.get_toplevel()).run()
@@ -286,6 +289,83 @@ def pm_do_scm_absorb_applied_patches(helper):
     helper.report_any_problems(result)
     return result.is_ok
 
+def pm_do_fold_external_patch(helper):
+    from ..patch_diff import patchlib
+    patch_file_path = helper.ask_file_path(_("Select patch file to be folded"))
+    if patch_file_path is None:
+        return
+    try:
+        epatch = patchlib.Patch.parse_text_file(patch_file_path)
+    except patchlib.ParseError as edata:
+        result = CmdResult.error(stderr="{0}: {1}: {2}\n".format(patch_file_path, edata.lineno, edata.message))
+        helper.report_any_problems(result)
+        return
+    force = False
+    absorb = False
+    refresh_tried = False
+    dlg = FoldPatchDialog(epatch, parent=helper)
+    resp = dlg.run()
+    while resp != Gtk.ResponseType.CANCEL:
+        epatch.set_strip_level(dlg.get_strip_level())
+        with dlg.showing_busy():
+            result = pm_gui_ifce.PM.do_fold_epatch(epatch, absorb=absorb, force=force)
+        if refresh_tried:
+            result = result - result.Suggest.REFRESH
+        if not (absorb or force) and result.suggests(result.Suggest.FORCE_ABSORB_OR_REFRESH):
+            resp = helper.ask_force_refresh_absorb_or_cancel(result)
+            if resp == Gtk.ResponseType.CANCEL:
+                break
+            elif resp == dialogue.Response.FORCE:
+                force = True
+            elif resp == dialogue.Response.ABSORB:
+                absorb = True
+            elif resp == dialogue.Response.REFRESH:
+                refresh_tried = True
+                with helper.showing_busy():
+                    top_patch_file_list = pm_gui_ifce.PM.get_filepaths_in_top_patch()
+                    file_paths = [file_path for file_path in epatch.get_file_paths(epatch.num_strip_levels) if file_path not in top_patch_file_list]
+                    result = pm_gui_ifce.PM.do_refresh_overlapped_files(file_paths)
+                helper.report_any_problems(result)
+            continue
+        helper.report_any_problems(result)
+        break
+    dlg.destroy()
+
+def pm_do_import_external_patch(helper):
+    suggestion = recollect.get("import", "last_directory")
+    from ..patch_diff import patchlib
+    patch_file_path = helper.ask_file_path(_("Select patch file to be imported"), suggestion=suggestion)
+    if patch_file_path is None:
+        return
+    try:
+        epatch = patchlib.Patch.parse_text_file(patch_file_path)
+    except patchlib.ParseError as edata:
+        result = CmdResult.error(stderr="{0}: {1}: {2}\n".format(patch_file_path, edata.lineno, edata.message))
+        helper.report_any_problems(result)
+        return
+    overwrite = False
+    dlg = ImportPatchDialog(epatch, parent=helper)
+    resp = dlg.run()
+    while resp != Gtk.ResponseType.CANCEL:
+        epatch.set_strip_level(dlg.get_strip_level())
+        with dlg.showing_busy():
+            result = pm_gui_ifce.PM.do_import_patch(epatch, dlg.get_as_name(), overwrite=overwrite)
+        if not overwrite and result.suggests(result.Suggest.OVERWRITE_OR_RENAME):
+            resp = helper.ask_rename_overwrite_or_cancel(result)
+            if resp == Gtk.ResponseType.CANCEL:
+                break
+            elif resp == dialogue.Response.OVERWRITE:
+                overwrite = True
+            else:
+                resp = dlg.run()
+            continue
+        helper.report_any_problems(result)
+        if result.suggests_rename:
+            resp = dlg.run()
+        else:
+            break
+    dlg.destroy()
+
 class NewSeriesDescrDialog(dialogue.Dialog):
     class Widget(text_edit.DbMessageWidget):
         UI_DESCR = \
@@ -467,12 +547,12 @@ class SeriesDescrEditDialog(dialogue.Dialog):
         self.show_all()
     def _handle_response_cb(self, dialog, response_id):
         if response_id == Gtk.ResponseType.CLOSE:
-            if self.edit_descr_widget.view.get_buffer().get_modified():
+            if dialog.edit_descr_widget.view.get_buffer().get_modified():
                 qtn = "\n".join([_("Unsaved changes to summary will be lost."), _("Close anyway?")])
-                if dialogue.main_window.ask_yes_no(qtn):
-                    self.destroy()
+                if dialog.ask_yes_no(qtn):
+                    dialog.destroy()
             else:
-                self.destroy()
+                dialog.destroy()
 
 class PatchDescrEditDialog(dialogue.Dialog):
     class Widget(text_edit.DbMessageWidget):
@@ -537,7 +617,7 @@ class PatchDescrEditDialog(dialogue.Dialog):
         if response_id == Gtk.ResponseType.CLOSE:
             if self.edit_descr_widget.view.get_buffer().get_modified():
                 qtn = "\n".join([_("Unsaved changes to summary will be lost."), _("Close anyway?")])
-                if dialogue.main_window.ask_yes_no(qtn):
+                if helper.ask_yes_no(qtn):
                     self.destroy()
             else:
                 self.destroy()
@@ -639,6 +719,70 @@ class RestorePatchDialog(dialogue.Dialog):
     def get_as_name(self):
         return self.as_name.get_text()
 
+class ImportPatchDialog(dialogue.Dialog):
+    def __init__(self, epatch, parent=None):
+        flags = ~Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT
+        title = _("Import Patch: {0} : {1} -- {2}").format(epatch.source_name, utils.path_rel_home(os.getcwd()), APP_NAME)
+        dialogue.Dialog.__init__(self, title, parent, flags, None)
+        if not parent:
+            self.set_icon_from_file(icons.APP_ICON_FILE)
+        self.epatch = epatch
+        #
+        patch_file_name = os.path.basename(epatch.source_name)
+        self.namebox = Gtk.HBox()
+        self.namebox.pack_start(Gtk.Label(_("As Patch:")), expand=False, fill=True, padding=0)
+        self.as_name = gutils.new_mutable_combox_text_with_entry()
+        self.as_name.get_child().set_width_chars(32)
+        self.as_name.set_text(patch_file_name)
+        self.namebox.pack_start(self.as_name, expand=True, fill=True, padding=0)
+        vbox = self.get_content_area()
+        vbox.pack_start(self.namebox, expand=False, fill=False, padding=0)
+        #
+        hbox = Gtk.HBox()
+        hbox.pack_start(Gtk.Label(_("Files: Strip Level:")), expand=False, fill=True, padding=0)
+        est_strip_level = self.epatch.estimate_strip_level()
+        self.strip_level_buttons = [Gtk.RadioButton(group=None, label="0")]
+        self.strip_level_buttons.append(Gtk.RadioButton(group=self.strip_level_buttons[0], label="1"))
+        for strip_level_button in self.strip_level_buttons:
+            strip_level_button.connect("toggled", self._strip_level_toggle_cb)
+            hbox.pack_start(strip_level_button, expand=False, fill=False, padding=0)
+            strip_level_button.set_active(False)
+        vbox.pack_start(hbox, expand=False, fill=False, padding=0)
+        #
+        self.file_list_widget = textview.Widget()
+        self.strip_level_buttons[1 if est_strip_level is None else est_strip_level].set_active(True)
+        self.update_file_list()
+        vbox.pack_start(self.file_list_widget, expand=True, fill=True, padding=0)
+        self.show_all()
+        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self.add_button(Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        self.set_focus_child(self.as_name)
+    def get_strip_level(self):
+        for strip_level in [0, 1]:
+            if self.strip_level_buttons[strip_level].get_active():
+                return strip_level
+        return None
+    def get_as_name(self):
+        return self.as_name.get_text()
+    def update_file_list(self):
+        from ..wsm.patch_diff.patchlib import TooMayStripLevels
+        strip_level = self.get_strip_level()
+        try:
+            filepaths = self.epatch.get_file_paths(strip_level)
+            self.file_list_widget.set_contents("\n".join(filepaths))
+        except TooMayStripLevels:
+            if strip_level == 0:
+                return
+            self.strip_level_buttons[0].set_active(True)
+    def _strip_level_toggle_cb(self, _widget, *args,**kwargs):
+        self.update_file_list()
+
+class FoldPatchDialog(ImportPatchDialog):
+    def __init__(self, epatch, parent=None):
+        ImportPatchDialog.__init__(self, epatch, parent)
+        self.set_title( _("Fold Patch: {0} : {1} -- {2}").format(epatch.source_name, utils.path_rel_home(os.getcwd()), APP_NAME))
+        self.namebox.hide()
+
 actions.CLASS_INDEP_AGS[pm_actions.AC_NOT_IN_PM_PGND].add_actions(
     [
         ("pm_init_cwd", wsm_icons.STOCK_INIT, _("_Initialize"), "",
@@ -661,6 +805,10 @@ actions.CLASS_INDEP_AGS[pm_actions.AC_POP_POSSIBLE | pm_actions.AC_IN_PM_PGND].a
         ("pm_refresh_top_patch", wsm_icons.STOCK_REFRESH_PATCH, _("Refresh"), None,
          _("Refresh the top patch"),
          lambda _action=None: pm_do_refresh_top_patch(dialogue.main_window)
+        ),
+        ("pm_fold_external_patch", wsm_icons.STOCK_FOLD_PATCH, _("Fold"), None,
+         _("Fold an external patch into the top applied patch"),
+         lambda _action=None: pm_do_fold_external_patch(dialogue.main_window)
         ),
     ]
 )
@@ -695,6 +843,10 @@ actions.CLASS_INDEP_AGS[pm_actions.AC_IN_PM_PGND].add_actions(
         ("pm_edit_series_descr", Gtk.STOCK_EDIT, _("Description"), None,
          _("Edit the series' description"),
          lambda _action=None: SeriesDescrEditDialog(parent=dialogue.main_window).show()
+        ),
+        ("pm_import_patch", wsm_icons.STOCK_IMPORT_PATCH, _("Import"), None,
+         _("Import an external patch behind the top applied patch"),
+         lambda _action=None: pm_do_import_external_patch(dialogue.main_window)
         ),
     ]
 )
