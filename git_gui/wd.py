@@ -20,11 +20,6 @@ import shutil
 from gi.repository import Gtk
 from gi.repository import GObject
 
-from .. import pm
-from .. import pm_gui
-from ..pm_gui import pm_gui_ifce
-from ..pm_gui import pm_actions
-
 from .. import scm
 from .. import scm_gui
 from ..scm_gui import scm_gui_ifce
@@ -45,7 +40,7 @@ from .. import wsm_icons
 from ..git_gui import git_do_opn
 
 class WDTreeModel(file_tree.FileTreeModel):
-    UPDATE_EVENTS = os_utils.E_FILE_CHANGES|scm.E_NEW_SCM|scm.E_FILE_CHANGES|pm.E_FILE_CHANGES|pm.E_PATCH_STACK_CHANGES|pm.E_PATCH_REFRESH|pm.E_POP|pm.E_PUSH|scm.E_WD_CHANGES
+    UPDATE_EVENTS = os_utils.E_FILE_CHANGES|scm.E_NEW_SCM|scm.E_FILE_CHANGES|scm.E_WD_CHANGES
     AU_FILE_CHANGE_EVENT = scm.E_FILE_CHANGES|os_utils.E_FILE_CHANGES # event returned by auto_update() if changes found
     @staticmethod
     def _get_file_db():
@@ -63,7 +58,7 @@ def get_masked_seln_conditions(seln):
             return actions.MaskedCondns(0, AC_ONLY_SUBMODULES_SELECTED)
     return actions.MaskedCondns(AC_ONLY_SUBMODULES_SELECTED, AC_ONLY_SUBMODULES_SELECTED)
 
-class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_actions.WDListenerMixin, pm_actions.WDListenerMixin, git_do_opn.DoOpnMixin):
+class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_actions.WDListenerMixin, git_do_opn.DoOpnMixin):
     MODEL = WDTreeModel
     UI_DESCR = \
     """
@@ -117,14 +112,11 @@ class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_actions.WDListene
         file_tree.FileTreeView.__init__(self, show_hidden=show_hidden, hide_clean=hide_clean)
         enotify.Listener.__init__(self)
         scm_actions.WDListenerMixin.__init__(self)
-        pm_actions.WDListenerMixin.__init__(self)
         self._update_popup_cb()
-        self.add_notification_cb(pm.E_PATCH_STACK_CHANGES|pm.E_NEW_PM|enotify.E_CHANGE_WD, self._update_popup_cb)
+        self.add_notification_cb(enotify.E_CHANGE_WD, self._update_popup_cb)
         self.get_selection().connect('changed', lambda seln: self.action_groups.update_condns(get_masked_seln_conditions(seln)))
     def _update_popup_cb(self, **kwargs):
-        if pm_gui_ifce.PM.is_poppable:
-            self.set_popup("/pmic_files_popup")
-        elif scm_gui_ifce.SCM.in_valid_wspce:
+        if scm_gui_ifce.SCM.in_valid_wspce:
             self.set_popup("/scmic_files_popup")
         else:
             self.set_popup(self.DEFAULT_POPUP)
@@ -133,7 +125,7 @@ class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_actions.WDListene
             [
                 ('wd_files_menu_files', None, _('Working Directory')),
             ])
-        self.action_groups[scm_actions.AC_IN_SCM_PGND|pm_actions.AC_NOT_PMIC|actions.AC_SELN_UNIQUE|file_tree.AC_ONLY_FILES_SELECTED].add_actions(
+        self.action_groups[scm_actions.AC_IN_SCM_PGND|actions.AC_SELN_UNIQUE|file_tree.AC_ONLY_FILES_SELECTED].add_actions(
             [
                 ("copy_file_to_index", Gtk.STOCK_COPY, _("Copy"), None,
                  _("Make a copy of the selected file in the index"),
@@ -154,7 +146,7 @@ class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_actions.WDListene
                  lambda _action=None: self.git_do_remove_files_in_index(self.get_selected_fsi_paths())
                 ),
             ])
-        self.action_groups[scm_actions.AC_IN_SCM_PGND|pm_actions.AC_NOT_PMIC|actions.AC_SELN_UNIQUE].add_actions(
+        self.action_groups[scm_actions.AC_IN_SCM_PGND|actions.AC_SELN_UNIQUE].add_actions(
             [
                 ("rename_file_in_index", wsm_icons.STOCK_RENAME, _("Rename"), None,
                  _("Rename the selected file/directory in the index (i.e. git mv)"),
@@ -168,14 +160,14 @@ class WDTreeView(file_tree.FileTreeView, enotify.Listener, scm_actions.WDListene
                  lambda _action=None: scm_gui_ifce.SCM.launch_difftool("HEAD", "--", self.get_selected_fsi_path())
                 ),
             ])
-        self.action_groups[scm_actions.AC_IN_SCM_PGND|pm_actions.AC_NOT_PMIC|actions.AC_SELN_MADE].add_actions(
+        self.action_groups[scm_actions.AC_IN_SCM_PGND|actions.AC_SELN_MADE].add_actions(
             [
                 ("wd_add_files_to_index", Gtk.STOCK_ADD, _("Add"), None,
                  _("Run \"git add\" on the selected files/directories"),
                  lambda _action=None: self.git_do_add_fsis_to_index(self.get_selected_fsi_paths())
                 ),
             ])
-        self.action_groups[scm_actions.AC_IN_SCM_PGND|pm_actions.AC_NOT_PMIC|actions.AC_SELN_MADE|file_tree.AC_ONLY_FILES_SELECTED].add_actions(
+        self.action_groups[scm_actions.AC_IN_SCM_PGND|actions.AC_SELN_MADE|file_tree.AC_ONLY_FILES_SELECTED].add_actions(
             [
                 ("wd_edit_selected_files", Gtk.STOCK_EDIT, _("Edit"), None,
                  _("Open the selected files for editing"),

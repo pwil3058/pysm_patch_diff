@@ -179,6 +179,18 @@ def reset_scm_ifce(dir_path=None):
     SCM = _NULL_BACKEND if pgt is None else _BACKEND[pgt]
     return SCM
 
+def reset_pm_ifce(events=0):
+    try:
+        from ..pm_gui import pm_gui_ifce
+        curr_pm = pm_gui_ifce.PM
+        pm_gui_ifce.reset_pm_ifce()
+        if curr_pm != pm_gui_ifce.PM and not enotify.E_CHANGE_WD & events:
+            from ..pm import E_NEW_PM
+            events |= E_NEW_PM
+    except ImportError:
+        pass
+    return events
+
 def check_interfaces(args):
     from ..bab import enotify
     events = 0
@@ -199,12 +211,7 @@ def check_interfaces(args):
             scm_wspce.add_workspace_path(newdir)
             recollect.set("workspace", "last_used", newdir)
             options.load_pgnd_options()
-    from ..pm_gui import pm_gui_ifce
-    curr_pm = pm_gui_ifce.PM
-    pm_gui_ifce.reset_pm_ifce()
-    if curr_pm != pm_gui_ifce.PM and not enotify.E_CHANGE_WD & events:
-        from ..pm import E_NEW_PM
-        events |= E_NEW_PM
+    events |= reset_pm_ifce(events)
     return events
 
 def init_current_dir(backend):
@@ -217,12 +224,7 @@ def init_current_dir(backend):
     if curr_scm != SCM:
         from ..scm import E_NEW_SCM
         events |= E_NEW_SCM
-    from ..pm_gui import pm_gui_ifce
-    curr_pm = pm_gui_ifce.PM
-    pm_gui_ifce.reset_pm_ifce()
-    if curr_pm != pm_gui_ifce.PM:
-        from ..pm import E_NEW_PM
-        events |= E_NEW_PM
+    events |= reset_pm_ifce(events)
     if SCM.in_valid_wspce:
         from ..scm_gui import scm_wspce
         from ..gtx import recollect
@@ -247,8 +249,7 @@ def init():
         from ..gtx import recollect
         scm_wspce.add_workspace_path(root)
         recollect.set("workspace", "last_used", root)
-    from ..pm_gui import pm_gui_ifce
-    pm_gui_ifce.reset_pm_ifce()
+    reset_pm_ifce()
     curr_dir = os.getcwd()
     options.reload_pgnd_options()
     from ..gtx.console import LOG
@@ -263,7 +264,10 @@ def init():
         enotify.notify_events(enotify.E_CHANGE_WD, new_wd=curr_dir)
     else:
         from ..scm import E_NEW_SCM
-        from ..pm import E_NEW_PM
-        enotify.notify_events(E_NEW_SCM|E_NEW_PM)
+        try:
+            from ..pm import E_NEW_PM
+            enotify.notify_events(E_NEW_SCM|E_NEW_PM)
+        except ImportError:
+            enotify.notify_events(E_NEW_SCM)
     from ..gtx import auto_update
     auto_update.set_initialize_event_flags(check_interfaces)
