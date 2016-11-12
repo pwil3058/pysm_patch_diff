@@ -21,16 +21,16 @@ from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import Pango
 
-from ..bab import CmdResult, CmdFailure
-from ..bab import runext
-from ..bab import options
+from ...bab import CmdResult, CmdFailure
+from ...bab import runext
+from ...bab import options
 
-from ..patch_diff import patchlib
+from .. import patchlib
 
-from ..gtx import dialogue
-from ..gtx import gutils
-from ..gtx import textview
-from .. import wsm_icons
+from ...gtx import dialogue
+from ...gtx import gutils
+from ...gtx import textview
+from ... import wsm_icons
 
 options.define("diff", "extdiff", options.Defn(str, None, _("The name of external application for viewing diffs")))
 

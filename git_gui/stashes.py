@@ -34,7 +34,7 @@ from ..gtx import table
 from ..gtx import text_edit
 from .. import wsm_icons
 
-from ..patch_diff_gui import diff
+from ..patch_diff.gui import diff
 
 from ..bab import utils
 
