@@ -181,7 +181,7 @@ def reset_scm_ifce(dir_path=None):
 
 def reset_pm_ifce(events=0):
     try:
-        from ..pm_gui import pm_gui_ifce
+        from ..pm.gui import pm_gui_ifce
         curr_pm = pm_gui_ifce.PM
         pm_gui_ifce.reset_pm_ifce()
         if curr_pm != pm_gui_ifce.PM and not enotify.E_CHANGE_WD & events:

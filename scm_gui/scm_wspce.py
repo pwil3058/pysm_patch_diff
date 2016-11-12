@@ -66,8 +66,7 @@ def chdir(newdir):
         from ..gtx import recollect
         WorkspacePathView.append_saved_path(newdir)
         recollect.set("workspace", "last_used", newdir)
-    from ..pm_gui import pm_gui_ifce
-    pm_gui_ifce.reset_pm_ifce()
+    scm_gui_ifce.reset_pm_ifce()
     options.reload_pgnd_options()
     CURDIR = os.getcwd()
     LOG.start_cmd(_("New Working Directory: {0}\n").format(CURDIR))
