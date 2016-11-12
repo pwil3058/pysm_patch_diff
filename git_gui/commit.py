@@ -16,7 +16,7 @@
 from gi.repository import Gtk
 
 from .. import scm
-from ..scm_gui import scm_actions
+from ..scm.gui import scm_actions
 
 from ..bab import enotify
 from ..bab import CmdFailure

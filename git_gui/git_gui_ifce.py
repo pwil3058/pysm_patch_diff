@@ -25,7 +25,6 @@ import errno
 from gi.repository import Pango
 
 from .. import scm
-from .. import scm_gui
 
 from ..bab import CmdResult
 from ..bab import runext
@@ -361,5 +360,5 @@ def index_is_empty():
     return True
 
 SCM = Interface()
-from ..scm_gui import scm_gui_ifce
+from ..scm.gui import scm_gui_ifce
 scm_gui_ifce.add_back_end(SCM)
