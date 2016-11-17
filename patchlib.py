@@ -264,10 +264,16 @@ class Header:
     def get_diffstat(self):
         return str(self.diffstat_lines)
     def set_comments(self, text):
+        if text and not text.endswith("\n"):
+            text += "\n"
         self.comment_lines = _Lines(text)
     def set_description(self, text):
+        if text and not text.endswith("\n"):
+            text += "\n"
         self.description_lines = _Lines(text)
     def set_diffstat(self, text):
+        if text and not text.endswith("\n"):
+            text += "\n"
         self.diffstat_lines = _Lines(text)
 
 def _is_non_null(path):
