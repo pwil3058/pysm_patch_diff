@@ -39,12 +39,12 @@ class FileAndRefreshActions:
         self._action_group = Gtk.ActionGroup("diff_file_and_refresh")
         self._action_group.add_actions(
             [
-                ("diff_save", Gtk.STOCK_SAVE, _('_Save'), None,
-                 _('Save the diff to previously nominated file'), self._save_acb),
-                ("diff_save_as", Gtk.STOCK_SAVE_AS, _('Save _as'), None,
-                 _('Save the diff to a nominated file'), self._save_as_acb),
-                ("diff_refresh", Gtk.STOCK_REFRESH, _('_Refresh'), None,
-                 _('Refresh contents of the diff'), self._refresh_acb),
+                ("diff_save", Gtk.STOCK_SAVE, _("_Save"), None,
+                 _("Save the diff to previously nominated file"), self._save_acb),
+                ("diff_save_as", Gtk.STOCK_SAVE_AS, _("Save _as"), None,
+                 _("Save the diff to a nominated file"), self._save_as_acb),
+                ("diff_refresh", Gtk.STOCK_REFRESH, _("_Refresh"), None,
+                 _("Refresh contents of the diff"), self._refresh_acb),
             ])
         self._save_file = None
         self.check_set_save_sensitive()
@@ -60,13 +60,13 @@ class FileAndRefreshActions:
             suggestion = self._save_file
         else:
             suggestion = os.getcwd()
-        self._save_file = dialogue.main_window.ask_file_path(_('Save as ...'), suggestion=suggestion, existing=False)
+        self._save_file = dialogue.main_window.ask_file_path(_("Save as ..."), suggestion=suggestion, existing=False)
         self._save_to_file()
     def _save_to_file(self):
         if not self._save_file:
             return
         try:
-            fobj = open(self._save_file, 'w')
+            fobj = open(self._save_file, "w")
         except IOError as edata:
             dialogue.main_window.report_any_problems(CmdResult.error(stderr=edata[1]))
             self.check_set_save_sensitive()

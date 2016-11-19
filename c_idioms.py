@@ -14,16 +14,16 @@
 ### along with this program; if not, write to the Free Software
 ### Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-'''
+"""
 Provide tools to support C idioms such as pointer arithmetic.
 This allows implementation (in Python) of algorithms published in C
 in a way that resembles the original and makes updating for changes in
 the original easier.
-'''
+"""
 
 import copy
 
-# 'C' algorithm often rely on unsigned overflow but
+# "C" algorithm often rely on unsigned overflow but
 # Python extends rather than overflowing so we need to lop off the
 # extra bits where appropriate
 class _UintWrapper(object):
@@ -119,13 +119,13 @@ class Uint64(_UintWrapper):
         _UintWrapper.__init__(self, value)
 
 class Sequence(object):
-    '''
+    """
     A wrapper for sequence objects that makes them more C like.
     Basically disable Python negative index mechanism and disallow
     access outside the wrapped sequence's bounds.
     This should catch errors in translating algorithms that assume C
     behaviour.
-    '''
+    """
     def __init__(self, wrapped):
         self.wrapped = wrapped
     def _check_key(self, key):
@@ -148,13 +148,13 @@ class Sequence(object):
         return getattr(self.wrapped, attrname)
 
 class Pointer(object):
-    '''
+    """
     An offset window to a sequence object (e.g. list, tuple).
     Useful for implementing algorithms designed using C pointer
     arithmmetic to process arrays.  But with the advantage of bounds
     checking.  Negative indices are relative to offset not the end
     of the wrapped object.
-    '''
+    """
     def __init__(self, wrapped, start=0):
         self.wrapped = Sequence(wrapped)
         self.offset = start

@@ -14,7 +14,7 @@
 ### along with this program; if not, write to the Free Software
 ### Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-'''Implement git's diff-delta.c, patch-delta.c and delta.h'''
+"""Implement git's diff-delta.c, patch-delta.c and delta.h"""
 
 import copy
 
@@ -218,7 +218,7 @@ def create_delta(delta_index, after_data, max_delta_size=None):
     outsize = DEFAULT_OUTSIZE if (not max_delta_size or max_delta_size > DEFAULT_OUTSIZE) else max_delta_size + MAX_OP_SIZE + 1
     out = bytearray(outsize)
     outpos = CountingIndex(0)
-    # store buffer sizes in order 'before' then 'after'
+    # store buffer sizes in order "before" then "after"
     before_data = delta_index.data
     for size in [len(before_data), len(after_data)]:
         while size >= 0x80:

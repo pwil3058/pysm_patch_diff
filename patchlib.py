@@ -13,7 +13,7 @@
 ### along with this program; if not, write to the Free Software
 ### Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-'''Classes and functions for operations on patch files'''
+"""Classes and functions for operations on patch files"""
 
 import collections
 import re
@@ -27,18 +27,18 @@ from ..patch_diff import gitbase85
 #TODO: convert methods that return lists to iterators
 
 # Useful named tuples to make code clearer
-_CHUNK = collections.namedtuple('_CHUNK', ['start', 'length'])
-_HUNK = collections.namedtuple('_HUNK', ['offset', 'start', 'length', 'numlines'])
-_PAIR = collections.namedtuple('_PAIR', ['before', 'after',])
-_FILE_AND_TS = collections.namedtuple('_FILE_AND_TS', ['path', 'timestamp',])
-_FILE_AND_TWS_LINES = collections.namedtuple('_FILE_AND_TWS_LINES', ['path', 'tws_lines',])
-_DIFF_DATA = collections.namedtuple('_DIFF_DATA', ['file_data', 'hunks',])
+_CHUNK = collections.namedtuple("_CHUNK", ["start", "length"])
+_HUNK = collections.namedtuple("_HUNK", ["offset", "start", "length", "numlines"])
+_PAIR = collections.namedtuple("_PAIR", ["before", "after",])
+_FILE_AND_TS = collections.namedtuple("_FILE_AND_TS", ["path", "timestamp",])
+_FILE_AND_TWS_LINES = collections.namedtuple("_FILE_AND_TWS_LINES", ["path", "tws_lines",])
+_DIFF_DATA = collections.namedtuple("_DIFF_DATA", ["file_data", "hunks",])
 
 # Useful strings for including in regular expressions
-_PATH_RE_STR = '"([^"]+)"|(\S+)'
-_TIMESTAMP_RE_STR = '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{9})? [-+]{1}\d{4}'
-_ALT_TIMESTAMP_RE_STR = '[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{2}:\d{2}:\d{2} \d{4} [-+]{1}\d{4}'
-_EITHER_TS_RE_STR = '(%s|%s)' % (_TIMESTAMP_RE_STR, _ALT_TIMESTAMP_RE_STR)
+_PATH_RE_STR = """"([^"]+)"|(\S+)"""
+_TIMESTAMP_RE_STR = "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{9})? [-+]{1}\d{4}"
+_ALT_TIMESTAMP_RE_STR = "[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{2}:\d{2}:\d{2} \d{4} [-+]{1}\d{4}"
+_EITHER_TS_RE_STR = "(%s|%s)" % (_TIMESTAMP_RE_STR, _ALT_TIMESTAMP_RE_STR)
 
 class ParseError(Exception):
     def __init__(self, message, lineno=None):
@@ -57,35 +57,35 @@ DEBUG = False
 class Bug(Exception): pass
 
 def gen_strip_level_function(level):
-    '''Return a function for stripping the specified levels off a file path'''
+    """Return a function for stripping the specified levels off a file path"""
     def strip_n(path, level):
         try:
             return path.split(os.sep, level)[level]
         except IndexError:
-            raise TooMayStripLevels(_('Strip level too large'), path, level)
+            raise TooMayStripLevels(_("Strip level too large"), path, level)
     level = int(level)
     if level == 0:
         return lambda path: path
     return lambda path: path if path.startswith(os.sep) else strip_n(path, level)
 
 def get_common_path(filelist):
-    '''Return the longest common path componet for the files in the list'''
+    """Return the longest common path componet for the files in the list"""
     # Extra wrapper required because os.path.commonprefix() is string oriented
     # rather than file path oriented (which is strange)
     return os.path.dirname(os.path.commonprefix(filelist))
 
 def _trim_trailing_ws(line):
-    '''Return the given line with any trailing white space removed'''
-    return re.sub('[ \t]+$', '', line)
+    """Return the given line with any trailing white space removed"""
+    return re.sub("[ \t]+$", "", line)
 
 class DiffStat:
-    '''Class to encapsulate diffstat related code'''
-    _ORDERED_KEYS = ['inserted', 'deleted', 'modified', 'unchanged']
+    """Class to encapsulate diffstat related code"""
+    _ORDERED_KEYS = ["inserted", "deleted", "modified", "unchanged"]
     _FMT_DATA = {
-        'inserted' : '{0} insertion{1}(+)',
-        'deleted' : '{0} deletion{1}(-)',
-        'modified' : '{0} modification{1}(!)',
-        'unchanged' : '{0} unchanges line{1}(+)'
+        "inserted" : "{0} insertion{1}(+)",
+        "deleted" : "{0} deletion{1}(-)",
+        "modified" : "{0} modification{1}(!)",
+        "unchanged" : "{0} unchanges line{1}(+)"
     }
     EMPTY_CRE = re.compile("^#? 0 files changed$")
     END_CRE = re.compile("^#? (\d+) files? changed(, (\d+) insertions?\(\+\))?(, (\d+) deletions?\(-\))?(, (\d+) modifications?\(\!\))?$")
@@ -94,7 +94,7 @@ class DiffStat:
     DIVIDER_LINE_CRE = re.compile("^---$")
     @staticmethod
     def list_summary_starts_at(lines, index):
-        '''Return True if lines[index] is the start of a valid "list" diffstat summary'''
+        """Return True if lines[index] is the start of a valid "list" diffstat summary"""
         if DiffStat.DIVIDER_LINE_CRE.match(lines[index]):
             index += 1
         while index < len(lines) and DiffStat.BLANK_LINE_CRE.match(lines[index]):
@@ -109,7 +109,7 @@ class DiffStat:
                 return True
         return False
     class Stats:
-        '''Class to hold diffstat statistics.'''
+        """Class to hold diffstat statistics."""
         def __init__(self):
             self._counts = {}
             for key in DiffStat._ORDERED_KEYS:
@@ -129,22 +129,22 @@ class DiffStat:
         def get_total(self):
             return sum(list(self))
         def get_total_changes(self):
-            return sum([self._counts[key] for key in ['inserted', 'deleted', 'modified']])
+            return sum([self._counts[key] for key in ["inserted", "deleted", "modified"]])
         def incr(self, key):
             self._counts[key] += 1
             return self._counts[key]
-        def as_string(self, joiner=', ', prefix=', '):
+        def as_string(self, joiner=", ", prefix=", "):
             strings = []
             for key in DiffStat._ORDERED_KEYS:
                 num = self._counts[key]
                 if num:
-                    strings.append(DiffStat._FMT_DATA[key].format(num, '' if num == 1 else 's'))
+                    strings.append(DiffStat._FMT_DATA[key].format(num, "" if num == 1 else "s"))
             if strings:
                 return prefix + joiner.join(strings)
             else:
-                return ''
+                return ""
         def as_bar(self, scale=lambda x: x):
-            string = ''
+            string = ""
             for key in DiffStat._ORDERED_KEYS:
                 count = scale(self._counts[key])
                 char = DiffStat._FMT_DATA[key][-2]
@@ -179,8 +179,8 @@ class DiffStat:
             return False
         def list_format_string(self, quiet=False, comment=False, trim_names=False, max_width=80):
             if len(self) == 0 and quiet:
-                return ''
-            string = ''
+                return ""
+            string = ""
             if trim_names:
                 common_path = get_common_path([x.path for x in self])
                 offset = len(common_path)
@@ -190,7 +190,7 @@ class DiffStat:
             summation = DiffStat.Stats()
             if num_files > 0:
                 len_longest_name = max([len(x.path) for x in self]) - offset
-                fstr = '%s {0}{1} |{2:5} {3}\n' % ('#' if comment else '')
+                fstr = "%s {0}{1} |{2:5} {3}\n" % ("#" if comment else "")
                 largest_total = max(max([x.diff_stats.get_total() for x in self]), 1)
                 avail_width = max(0, max_width - (len_longest_name + 9))
                 if comment:
@@ -200,14 +200,14 @@ class DiffStat:
                     summation += stats.diff_stats
                     total = stats.diff_stats.get_total()
                     name = stats.path[offset:]
-                    spaces = ' ' * (len_longest_name - len(name))
+                    spaces = " " * (len_longest_name - len(name))
                     string += fstr.format(name, spaces, total, stats.diff_stats.as_bar(scale))
             if num_files > 0 or not quiet:
                 if comment:
-                    string += '#'
-                string += ' {0} file{1} changed'.format(num_files, '' if num_files == 1 else 's')
+                    string += "#"
+                string += " {0} file{1} changed".format(num_files, "" if num_files == 1 else "s")
                 string += summation.as_string()
-                string += '\n'
+                string += "\n"
             return string
 
 class _Lines:
@@ -219,7 +219,7 @@ class _Lines:
         else:
             self.lines = list(contents)
     def __str__(self):
-        return ''.join(self.lines)
+        return "".join(self.lines)
     def __iter__(self):
         for line in self.lines:
             yield line
@@ -230,11 +230,11 @@ class _Lines:
             self.lines += list(data)
 
 class Header:
-    def __init__(self, text=''):
+    def __init__(self, text=""):
         lines = text.splitlines(True)
         descr_starts_at = 0
         for line in lines:
-            if not line.startswith('#'):
+            if not line.startswith("#"):
                 break
             descr_starts_at += 1
         self.comment_lines = _Lines(lines[:descr_starts_at])
@@ -277,7 +277,7 @@ class Header:
         self.diffstat_lines = _Lines(text)
 
 def _is_non_null(path):
-    return path and path != '/dev/null'
+    return path and path != "/dev/null"
 
 def _file_path_fm_pair(pair, strip=lambda x: x):
     get_path = lambda x: x if isinstance(x, str) else x.path
@@ -312,9 +312,9 @@ def _file_data_consistent_with_strip_one(pair):
         return False
 
 class FilePathPlus:
-    ADDED = '+'
-    EXTANT = ' '
-    DELETED = '-'
+    ADDED = "+"
+    EXTANT = " "
+    DELETED = "-"
     def __init__(self, path, status, expath=None):
         self.path = path
         self.status = status
@@ -349,14 +349,14 @@ class Preamble(_Lines):
         return (None, index)
     @staticmethod
     def parse_lines(lines):
-        '''Parse list of lines and return a valid Preamble or raise exception'''
+        """Parse list of lines and return a valid Preamble or raise exception"""
         preamble, index = Preamble.get_preamble_at(lines, 0, raise_if_malformed=True)
         if not preamble or index < len(lines):
-            raise ParseError(_('Not a valid preamble.'))
+            raise ParseError(_("Not a valid preamble."))
         return preamble
     @staticmethod
     def parse_text(text):
-        '''Parse text and return a valid Preamble or raise exception'''
+        """Parse text and return a valid Preamble or raise exception"""
         return DiffPlus.parse_lines(text.splitlines(True))
     def __init__(self, preamble_type, lines, file_data, extras=None):
         _Lines.__init__(self, lines)
@@ -384,17 +384,17 @@ class Preamble(_Lines):
 class GitPreamble(Preamble):
     DIFF_CRE = re.compile("^diff\s+--git\s+({0})\s+({1})$".format(_PATH_RE_STR, _PATH_RE_STR))
     EXTRAS_CRES = {
-        'old mode' : re.compile('^(old mode)\s+(\d*)$'),
-        'new mode' : re.compile('^(new mode)\s+(\d*)$'),
-        'deleted file mode' : re.compile('^(deleted file mode)\s+(\d*)$'),
-        'new file mode' :  re.compile('^(new file mode)\s+(\d*)$'),
-        'copy from' : re.compile('^(copy from)\s+({0})$'.format(_PATH_RE_STR)),
-        'copy to' : re.compile('^(copy to)\s+({0})$'.format(_PATH_RE_STR)),
-        'rename from' : re.compile('^(rename from)\s+({0})$'.format(_PATH_RE_STR)),
-        'rename to' : re.compile('^(rename to)\s+({0})$'.format(_PATH_RE_STR)),
-        'similarity index' : re.compile('^(similarity index)\s+((\d*)%)$'),
-        'dissimilarity index' : re.compile('^(dissimilarity index)\s+((\d*)%)$'),
-        'index' : re.compile('^(index)\s+(([a-fA-F0-9]+)..([a-fA-F0-9]+)( (\d*))?)$'),
+        "old mode" : re.compile("^(old mode)\s+(\d*)$"),
+        "new mode" : re.compile("^(new mode)\s+(\d*)$"),
+        "deleted file mode" : re.compile("^(deleted file mode)\s+(\d*)$"),
+        "new file mode" :  re.compile("^(new file mode)\s+(\d*)$"),
+        "copy from" : re.compile("^(copy from)\s+({0})$".format(_PATH_RE_STR)),
+        "copy to" : re.compile("^(copy to)\s+({0})$".format(_PATH_RE_STR)),
+        "rename from" : re.compile("^(rename from)\s+({0})$".format(_PATH_RE_STR)),
+        "rename to" : re.compile("^(rename to)\s+({0})$".format(_PATH_RE_STR)),
+        "similarity index" : re.compile("^(similarity index)\s+((\d*)%)$"),
+        "dissimilarity index" : re.compile("^(dissimilarity index)\s+((\d*)%)$"),
+        "index" : re.compile("^(index)\s+(([a-fA-F0-9]+)..([a-fA-F0-9]+)( (\d*))?)$"),
     }
     @staticmethod
     def get_preamble_at(lines, index, raise_if_malformed):
@@ -420,7 +420,7 @@ class GitPreamble(Preamble):
     def __init__(self, lines, file_data, extras=None):
         if extras is None:
             etxras = {}
-        Preamble.__init__(self, 'git', lines=lines, file_data=file_data,extras=extras)
+        Preamble.__init__(self, "git", lines=lines, file_data=file_data,extras=extras)
     def get_file_path(self, strip_level=0):
         strip = gen_strip_level_function(strip_level)
         return _file_path_fm_pair(self.file_data, strip)
@@ -430,7 +430,7 @@ class GitPreamble(Preamble):
             path_plus.expath = self.get_file_expath(strip_level=strip_level)
         return path_plus
     def get_file_expath(self, strip_level=0):
-        for key in ['copy from', 'rename from']:
+        for key in ["copy from", "rename from"]:
             if key in self.extras:
                 strip = gen_strip_level_function(strip_level)
                 return strip(self.extras[key])
@@ -448,18 +448,18 @@ class GitPreamble(Preamble):
 Preamble.subtypes.append(GitPreamble)
 
 class DiffPreamble(Preamble):
-    CRE = re.compile('^diff(\s.+)\s+({0})\s+({1})$'.format(_PATH_RE_STR, _PATH_RE_STR))
+    CRE = re.compile("^diff(\s.+)\s+({0})\s+({1})$".format(_PATH_RE_STR, _PATH_RE_STR))
     @staticmethod
     def get_preamble_at(lines, index, raise_if_malformed):
         match = DiffPreamble.CRE.match(lines[index])
-        if not match or (match.group(1) and match.group(1).find('--git') != -1):
+        if not match or (match.group(1) and match.group(1).find("--git") != -1):
             return (None, index)
         file1 = match.group(3) if match.group(3) else match.group(4)
         file2 = match.group(6) if match.group(6) else match.group(7)
         next_index = index + 1
         return (DiffPreamble(lines[index:next_index], _PAIR(file1, file2), match.group(1)), next_index)
     def __init__(self, lines, file_data, extras=None):
-        Preamble.__init__(self, 'diff', lines=lines, file_data=file_data, extras=extras)
+        Preamble.__init__(self, "diff", lines=lines, file_data=file_data, extras=extras)
     def get_file_path(self, strip_level=0):
         strip = gen_strip_level_function(strip_level)
         return _file_path_fm_pair(self.file_data, strip)
@@ -478,7 +478,7 @@ class IndexPreamble(Preamble):
         next_index = index + (2 if (index + 1) < len(lines) and IndexPreamble.SEP_RCE.match(lines[index + 1]) else 1)
         return (IndexPreamble(lines[index:next_index], filepath), next_index)
     def __init__(self, lines, file_data, extras=None):
-        Preamble.__init__(self, 'index', lines=lines, file_data=file_data, extras=extras)
+        Preamble.__init__(self, "index", lines=lines, file_data=file_data, extras=extras)
     def get_file_path(self, strip_level=0):
         strip = gen_strip_level_function(strip_level)
         return strip(self.file_data)
@@ -486,8 +486,8 @@ class IndexPreamble(Preamble):
 Preamble.subtypes.append(IndexPreamble)
 
 class Preambles(list):
-    path_precedence = ['index', 'git', 'diff']
-    expath_precedence = ['git', 'index', 'diff']
+    path_precedence = ["index", "git", "diff"]
+    expath_precedence = ["git", "index", "diff"]
     @staticmethod
     def get_preambles_at(lines, index, raise_if_malformed):
         preambles = Preambles()
@@ -503,21 +503,21 @@ class Preambles(list):
         return (preambles, index)
     @staticmethod
     def parse_lines(lines):
-        '''Parse list of lines and return a valid Preambles list or raise exception'''
+        """Parse list of lines and return a valid Preambles list or raise exception"""
         preambles, index = Preambles.get_preambles_at(lines, 0, raise_if_malformed=True)
         if not preambles or index < len(lines):
-            raise ParseError(_('Not a valid preamble list.'))
+            raise ParseError(_("Not a valid preamble list."))
         return preambles
     @staticmethod
     def parse_text(text):
-        '''Parse text and return a valid Preambles list or raise exception'''
+        """Parse text and return a valid Preambles list or raise exception"""
         return DiffPlus.parse_lines(text.splitlines(True))
     def __init__(self, preambles=None):
         if preambles is not None:
             for preamble in preambles:
                 self.append(preamble)
     def __str__(self):
-        return ''.join([str(preamble) for preamble in self])
+        return "".join([str(preamble) for preamble in self])
     def get_types(self):
         return [item.preamble_type for item in self]
     def get_index_for_type(self, preamble_type):
@@ -579,7 +579,7 @@ class Diff:
         return (_FILE_AND_TS(filepath, match.group(4)), index + 1)
     @staticmethod
     def _get_diff_at(subtype, lines, start_index, raise_if_malformed=False):
-        '''generic function that works for unified and context diffs'''
+        """generic function that works for unified and context diffs"""
         if len(lines) - start_index < 2:
             return (None, start_index)
         hunks = list()
@@ -590,7 +590,7 @@ class Diff:
         after_file_data, index = subtype.get_after_file_data_at(lines, index)
         if not after_file_data:
             if raise_if_malformed:
-                raise ParseError(_('Missing unified diff after file data.'), index)
+                raise ParseError(_("Missing unified diff after file data."), index)
             else:
                 return (None, start_index)
         while index < len(lines):
@@ -600,7 +600,7 @@ class Diff:
             hunks.append(hunk)
         if len(hunks) == 0:
             if raise_if_malformed:
-                raise ParseError(_('Expected unified diff hunks not found.'), index)
+                raise ParseError(_("Expected unified diff hunks not found."), index)
             else:
                 return (None, start_index)
         return (subtype(lines[start_index:start_index + 2], _PAIR(before_file_data, after_file_data), hunks), index)
@@ -613,14 +613,14 @@ class Diff:
         return (None, index)
     @staticmethod
     def parse_lines(lines):
-        '''Parse list of lines and return a valid Diff or raise exception'''
+        """Parse list of lines and return a valid Diff or raise exception"""
         diff, index = Diff.get_diff_at(lines, 0, raise_if_malformed=True)
         if not diff or index < len(lines):
-            raise ParseError(_('Not a valid diff.'))
+            raise ParseError(_("Not a valid diff."))
         return diff
     @staticmethod
     def parse_text(text):
-        '''Parse text and return a valid DiffPlus or raise exception'''
+        """Parse text and return a valid DiffPlus or raise exception"""
         return Diff.parse_lines(text.splitlines(True))
     def __init__(self, diff_type, lines, file_data, hunks):
         self.header = _Lines(lines)
@@ -628,7 +628,7 @@ class Diff:
         self.file_data = file_data
         self.hunks = list() if hunks is None else hunks
     def __str__(self):
-        return str(self.header) + ''.join([str(hunk) for hunk in self.hunks])
+        return str(self.header) + "".join([str(hunk) for hunk in self.hunks])
     def iter_lines(self):
         for line in self.header:
             yield line
@@ -678,27 +678,27 @@ class UnifiedDiffHunk(DiffHunk):
         bad_lines = list()
         after_count = 0
         for index in range(len(self.lines)):
-            if self.lines[index].startswith('+'):
+            if self.lines[index].startswith("+"):
                 after_count += 1
                 repl_line = _trim_trailing_ws(self.lines[index])
                 if len(repl_line) != len(self.lines[index]):
                     bad_lines.append(str(self.after.start + after_count - 1))
                     if fix:
                         self.lines[index] = repl_line
-            elif self.lines[index].startswith(' '):
+            elif self.lines[index].startswith(" "):
                 after_count += 1
-            elif DEBUG and not self.lines[index].startswith('-'):
-                raise Bug('Unexpected end of unified diff hunk.')
+            elif DEBUG and not self.lines[index].startswith("-"):
+                raise Bug("Unexpected end of unified diff hunk.")
         return bad_lines
     def get_diffstat_stats(self):
         stats = DiffStat.Stats()
         for index in range(len(self.lines)):
-            if self.lines[index].startswith('-'):
-                stats.incr('deleted')
-            elif self.lines[index].startswith('+'):
-                stats.incr('inserted')
-            elif DEBUG and not self.lines[index].startswith(' '):
-                raise Bug('Unexpected end of unified diff hunk.')
+            if self.lines[index].startswith("-"):
+                stats.incr("deleted")
+            elif self.lines[index].startswith("+"):
+                stats.incr("inserted")
+            elif DEBUG and not self.lines[index].startswith(" "):
+                raise Bug("Unexpected end of unified diff hunk.")
         return stats
     def fix_trailing_whitespace(self):
         return self._process_tws(fix=True)
@@ -706,8 +706,8 @@ class UnifiedDiffHunk(DiffHunk):
         return self._process_tws(fix=False)
 
 class UnifiedDiff(Diff):
-    BEFORE_FILE_CRE = re.compile('^--- ({0})(\s+{1})?(.*)$'.format(_PATH_RE_STR, _EITHER_TS_RE_STR))
-    AFTER_FILE_CRE = re.compile('^\+\+\+ ({0})(\s+{1})?(.*)$'.format(_PATH_RE_STR, _EITHER_TS_RE_STR))
+    BEFORE_FILE_CRE = re.compile("^--- ({0})(\s+{1})?(.*)$".format(_PATH_RE_STR, _EITHER_TS_RE_STR))
+    AFTER_FILE_CRE = re.compile("^\+\+\+ ({0})(\s+{1})?(.*)$".format(_PATH_RE_STR, _EITHER_TS_RE_STR))
     HUNK_DATA_CRE = re.compile("^@@\s+-(\d+)(,(\d+))?\s+\+(\d+)(,(\d+))?\s+@@\s*(.*)$")
     @staticmethod
     def get_before_file_data_at(lines, index):
@@ -727,20 +727,20 @@ class UnifiedDiff(Diff):
         before_count = after_count = 0
         try:
             while before_count < before_length or after_count < after_length:
-                if lines[index].startswith('-'):
+                if lines[index].startswith("-"):
                     before_count += 1
-                elif lines[index].startswith('+'):
+                elif lines[index].startswith("+"):
                     after_count += 1
-                elif lines[index].startswith(' '):
+                elif lines[index].startswith(" "):
                     before_count += 1
                     after_count += 1
-                elif not lines[index].startswith('\\'):
-                    raise ParseError(_('Unexpected end of unified diff hunk.'), index)
+                elif not lines[index].startswith("\\"):
+                    raise ParseError(_("Unexpected end of unified diff hunk."), index)
                 index += 1
-            if index < len(lines) and lines[index].startswith('\\'):
+            if index < len(lines) and lines[index].startswith("\\"):
                 index += 1
         except IndexError:
-            raise ParseError(_('Unexpected end of patch text.'))
+            raise ParseError(_("Unexpected end of patch text."))
         before_chunk = _CHUNK(int(match.group(1)), before_length)
         after_chunk = _CHUNK(int(match.group(4)), after_length)
         return (UnifiedDiffHunk(lines[start_index:index], before_chunk, after_chunk), index)
@@ -748,7 +748,7 @@ class UnifiedDiff(Diff):
     def get_diff_at(lines, start_index, raise_if_malformed=False):
         return Diff._get_diff_at(UnifiedDiff, lines, start_index, raise_if_malformed)
     def __init__(self, lines, file_data, hunks):
-        Diff.__init__(self, 'unified', lines, file_data, hunks)
+        Diff.__init__(self, "unified", lines, file_data, hunks)
 
 Diff.subtypes.append(UnifiedDiff)
 
@@ -758,32 +758,32 @@ class ContextDiffHunk(DiffHunk):
     def _process_tws(self, fix=False):
         bad_lines = list()
         for index in range(self.after.offset + 1, self.after.offset + self.after.numlines):
-            if self.lines[index].startswith('+ ') or self.lines[index].startswith('! '):
+            if self.lines[index].startswith("+ ") or self.lines[index].startswith("! "):
                 repl_line = self.lines[index][:2] + _trim_trailing_ws(self.lines[index][2:])
                 after_count = index - (self.after.offset + 1)
                 if len(repl_line) != len(self.lines[index]):
                     bad_lines.append(str(self.after.start + after_count))
                     if fix:
                         self.lines[index] = repl_line
-            elif DEBUG and not self.lines[index].startswith('  '):
-                raise Bug('Unexpected end of context diff hunk.')
+            elif DEBUG and not self.lines[index].startswith("  "):
+                raise Bug("Unexpected end of context diff hunk.")
         return bad_lines
     def get_diffstat_stats(self):
         stats = DiffStat.Stats()
         for index in range(self.before.offset + 1, self.before.offset + self.before.numlines):
-            if self.lines[index].startswith('- '):
-                stats.incr('deleted')
-            elif self.lines[index].startswith('! '):
-                stats.incr('modified')
-            elif DEBUG and not self.lines[index].startswith('  '):
-                raise Bug('Unexpected end of context diff "before" hunk.')
+            if self.lines[index].startswith("- "):
+                stats.incr("deleted")
+            elif self.lines[index].startswith("! "):
+                stats.incr("modified")
+            elif DEBUG and not self.lines[index].startswith("  "):
+                raise Bug("Unexpected end of context diff \"before\" hunk.")
         for index in range(self.after.offset + 1, self.after.offset + self.after.numlines):
-            if self.lines[index].startswith('+ '):
-                stats.incr('inserted')
-            elif self.lines[index].startswith('! '):
-                stats.incr('modified')
-            elif DEBUG and not self.lines[index].startswith('  '):
-                raise Bug('Unexpected end of context diff "after" hunk.')
+            if self.lines[index].startswith("+ "):
+                stats.incr("inserted")
+            elif self.lines[index].startswith("! "):
+                stats.incr("modified")
+            elif DEBUG and not self.lines[index].startswith("  "):
+                raise Bug("Unexpected end of context diff \"after\" hunk.")
         return stats
     def fix_trailing_whitespace(self):
         return self._process_tws(fix=True)
@@ -791,11 +791,11 @@ class ContextDiffHunk(DiffHunk):
         return self._process_tws(fix=False)
 
 class ContextDiff(Diff):
-    BEFORE_FILE_CRE = re.compile('^\*\*\* ({0})(\s+{1})?$'.format(_PATH_RE_STR, _EITHER_TS_RE_STR))
-    AFTER_FILE_CRE = re.compile('^--- ({0})(\s+{1})?$'.format(_PATH_RE_STR, _EITHER_TS_RE_STR))
-    HUNK_START_CRE = re.compile('^\*{15}\s*(.*)$')
-    HUNK_BEFORE_CRE = re.compile('^\*\*\*\s+(\d+)(,(\d+))?\s+\*\*\*\*\s*(.*)$')
-    HUNK_AFTER_CRE = re.compile('^---\s+(\d+)(,(\d+))?\s+----(.*)$')
+    BEFORE_FILE_CRE = re.compile("^\*\*\* ({0})(\s+{1})?$".format(_PATH_RE_STR, _EITHER_TS_RE_STR))
+    AFTER_FILE_CRE = re.compile("^--- ({0})(\s+{1})?$".format(_PATH_RE_STR, _EITHER_TS_RE_STR))
+    HUNK_START_CRE = re.compile("^\*{15}\s*(.*)$")
+    HUNK_BEFORE_CRE = re.compile("^\*\*\*\s+(\d+)(,(\d+))?\s+\*\*\*\*\s*(.*)$")
+    HUNK_AFTER_CRE = re.compile("^---\s+(\d+)(,(\d+))?\s+----(.*)$")
     @staticmethod
     def get_before_file_data_at(lines, index):
         return Diff._get_file_data_at(ContextDiff.BEFORE_FILE_CRE, lines, index)
@@ -843,25 +843,25 @@ class ContextDiff(Diff):
                 before_count += 1
                 index += 1
             if after_chunk is None:
-                if lines[index].startswith('\ '):
+                if lines[index].startswith("\ "):
                     before_count += 1
                     index += 1
                 after_start_index = index
                 after_chunk, index = ContextDiff._get_after_chunk_at(lines, index)
                 if after_chunk is None:
-                    raise ParseError(_('Failed to find context diff "after" hunk.'), index)
+                    raise ParseError(_("Failed to find context diff \"after\" hunk."), index)
             while after_count < after_chunk.length:
-                if not lines[index].startswith(('! ', '+ ', '  ')):
+                if not lines[index].startswith(("! ", "+ ", "  ")):
                     if after_count == 0:
                         break
-                    raise ParseError(_('Unexpected end of context diff hunk.'), index)
+                    raise ParseError(_("Unexpected end of context diff hunk."), index)
                 after_count += 1
                 index += 1
-            if index < len(lines) and lines[index].startswith('\ '):
+            if index < len(lines) and lines[index].startswith("\ "):
                 after_count += 1
                 index += 1
         except IndexError:
-            raise ParseError(_('Unexpected end of patch text.'))
+            raise ParseError(_("Unexpected end of patch text."))
         before_hunk = _HUNK(before_start_index - start_index, before_chunk.start, before_chunk.length, after_start_index - before_start_index)
         after_hunk = _HUNK(after_start_index - start_index, after_chunk.start, after_chunk.length, index - after_start_index)
         return (ContextDiffHunk(lines[start_index:index], before_hunk, after_hunk), index)
@@ -869,12 +869,12 @@ class ContextDiff(Diff):
     def get_diff_at(lines, start_index, raise_if_malformed=False):
         return Diff._get_diff_at(ContextDiff, lines, start_index, raise_if_malformed)
     def __init__(self, lines, file_data, hunks):
-        Diff.__init__(self, 'context', lines, file_data, hunks)
+        Diff.__init__(self, "context", lines, file_data, hunks)
 
 Diff.subtypes.append(ContextDiff)
 
 class GitBinaryDiffData(_Lines):
-    LITERAL, DELTA = ('literal', 'delta')
+    LITERAL, DELTA = ("literal", "delta")
     def __init__(self, lines, method, size_raw, data_zipped):
         _Lines.__init__(self, lines)
         self.method = method
@@ -888,8 +888,8 @@ class GitBinaryDiffData(_Lines):
         return zlib.decompress(bytes(self.data_zipped))
 
 class GitBinaryDiff(Diff):
-    START_CRE = re.compile('^GIT binary patch$')
-    DATA_START_CRE = re.compile('^(literal|delta) (\d+)$')
+    START_CRE = re.compile("^GIT binary patch$")
+    DATA_START_CRE = re.compile("^(literal|delta) (\d+)$")
     DATA_LINE_CRE = gitbase85.LINE_CRE
     BLANK_LINE_CRE = re.compile("^\s*$")
     @staticmethod
@@ -913,10 +913,10 @@ class GitBinaryDiff(Diff):
         try:
             data_zipped = gitbase85.decode_lines(lines[start_index + 1:end_data])
         except AssertionError:
-            raise DataError('Inconsistent git binary patch data.', lineno=start_index)
+            raise DataError("Inconsistent git binary patch data.", lineno=start_index)
         raw_size = len(zlib.decompress(bytes(data_zipped)))
         if raw_size != size:
-            raise DataError(_('Git binary patch expected {0} bytes. Got {1} bytes.'.format(size, raw_size)), lineno=start_index)
+            raise DataError(_("Git binary patch expected {0} bytes. Got {1} bytes.".format(size, raw_size)), lineno=start_index)
         return (GitBinaryDiffData(dlines, method, raw_size, data_zipped), index)
     @staticmethod
     def get_diff_at(lines, start_index, raise_if_malformed=True):
@@ -924,11 +924,11 @@ class GitBinaryDiff(Diff):
             return (None, start_index)
         forward, index = GitBinaryDiff.get_data_at(lines, start_index + 1)
         if forward is None and raise_if_malformed:
-            raise ParseError(_('No content in GIT binary patch text.'))
+            raise ParseError(_("No content in GIT binary patch text."))
         reverse, index = GitBinaryDiff.get_data_at(lines, index)
         return (GitBinaryDiff(lines[start_index:index], forward, reverse), index)
     def __init__(self, lines, forward, reverse):
-        Diff.__init__(self, 'git_binary', lines, None, None)
+        Diff.__init__(self, "git_binary", lines, None, None)
         self.forward = forward
         self.reverse = reverse
     def get_outcome(self):
@@ -937,8 +937,8 @@ class GitBinaryDiff(Diff):
 Diff.subtypes.append(GitBinaryDiff)
 
 class DiffPlus:
-    '''Class to hold diff (headerless) information relavent to a single file.
-    Includes (optional) preambles and trailing junk such as quilt's separators.'''
+    """Class to hold diff (headerless) information relavent to a single file.
+    Includes (optional) preambles and trailing junk such as quilt's separators."""
     @staticmethod
     def get_diff_plus_at(lines, start_index, raise_if_malformed=False):
         preambles, index = Preambles.get_preambles_at(lines, start_index, raise_if_malformed)
@@ -956,14 +956,14 @@ class DiffPlus:
         return (DiffPlus(preambles, diff_data), index)
     @staticmethod
     def parse_lines(lines):
-        '''Parse list of lines and return a valid DiffPlus or raise exception'''
+        """Parse list of lines and return a valid DiffPlus or raise exception"""
         diff_plus, index = DiffPlus.get_diff_plus_at(lines, 0, raise_if_malformed=True)
         if not diff_plus or index < len(lines):
-            raise ParseError(_('Not a valid (optionally preambled) diff.'))
+            raise ParseError(_("Not a valid (optionally preambled) diff."))
         return diff_plus
     @staticmethod
     def parse_text(text):
-        '''Parse text and return a valid DiffPlus or raise exception'''
+        """Parse text and return a valid DiffPlus or raise exception"""
         return DiffPlus.parse_lines(text.splitlines(True))
     def __init__(self, preambles=None, diff=None, trailing_junk=None):
         self.preambles = preambles if isinstance(preambles, Preambles) else Preambles(preambles)
@@ -989,14 +989,14 @@ class DiffPlus:
         index = self.preambles.get_index_for_type(preamble_type)
         return None if index is None else self.preambles[index]
     def get_new_mode(self):
-        git_preamble = self.get_preamble_for_type('git')
+        git_preamble = self.get_preamble_for_type("git")
         if git_preamble is not None:
-            for key in ['new mode', 'new file mode']:
+            for key in ["new mode", "new file mode"]:
                 if key in git_preamble.extras:
                     return int(git_preamble.extras[key], 8)
         return None
     def is_compatible_with(self, git_hash):
-        git_preamble = self.get_preamble_for_type('git')
+        git_preamble = self.get_preamble_for_type("git")
         if git_preamble is not None:
             return git_preamble.is_compatible_with(git_hash)
         return None # means "don't know"
@@ -1032,11 +1032,11 @@ class DiffPlus:
         return h.digest()
 
 class Patch:
-    '''Class to hold patch information relavent to multiple files with
-    an optional header (or a single file with a header).'''
+    """Class to hold patch information relavent to multiple files with
+    an optional header (or a single file with a header)."""
     @staticmethod
     def parse_lines(lines, num_strip_levels=0):
-        '''Parse list of lines and return a Patch instance'''
+        """Parse list of lines and return a Patch instance"""
         diff_starts_at = None
         diff_pluses = list()
         index = 0
@@ -1056,36 +1056,36 @@ class Patch:
             index += 1
         patch = Patch(num_strip_levels=num_strip_levels)
         patch.diff_pluses = diff_pluses
-        patch.set_header(''.join(lines[0:diff_starts_at]))
+        patch.set_header("".join(lines[0:diff_starts_at]))
         return patch
     @staticmethod
     def parse_text(text, num_strip_levels=0):
-        '''Parse text and return a Patch instance.'''
+        """Parse text and return a Patch instance."""
         return Patch.parse_lines(text.splitlines(True), num_strip_levels=num_strip_levels)
     @staticmethod
     def parse_email_text(text, num_strip_levels=0):
-        '''Parse email text and return a Patch instance.'''
+        """Parse email text and return a Patch instance."""
         msg = email.message_from_string(text)
-        subject = msg.get('Subject')
+        subject = msg.get("Subject")
         if subject:
             # email may have inapproriate newlines (and they play havoc with REs) so fix them
-            text = re.sub('\r\n', os.linesep, msg.get_payload())
+            text = re.sub("\r\n", os.linesep, msg.get_payload())
         else:
             text = msg.get_payload()
         patch = parse_text(text, num_strip_levels=num_strip_levels)
         if subject:
             descr = patch.get_description()
-            patch.set_description('\n'.join([subject, descr]))
+            patch.set_description("\n".join([subject, descr]))
         return patch
     @staticmethod
     def parse_text_file(filepath, num_strip_levels=0):
-        '''Parse a text file and return a Patch instance.'''
+        """Parse a text file and return a Patch instance."""
         patch = Patch.parse_text(open(filepath).read(), num_strip_levels=num_strip_levels)
         patch.source_name = filepath
         return patch
     @staticmethod
     def parse_email_file(filepath, num_strip_levels=0):
-        '''Parse a text file and return a Patch instance.'''
+        """Parse a text file and return a Patch instance."""
         patch = Patch.parse_email_text(open(filepath).read(), num_strip_levels=num_strip_levels)
         patch.source_name = filepath
         return patch
@@ -1101,7 +1101,7 @@ class Patch:
     def estimate_strip_level(self):
         trues = 0
         for diff_plus in self.diff_pluses:
-            if diff_plus.preambles.get_index_for_type('git') is not None:
+            if diff_plus.preambles.get_index_for_type("git") is not None:
                 # git patches will always have a strip level of 1
                 return 1
             check = _file_data_consistent_with_strip_one(diff_plus.diff.file_data)
@@ -1111,7 +1111,7 @@ class Patch:
                 return 0
         return 1 if trues > 0 else None
     def check_relevance(self, strip_level=None, path=None):
-        relevance = collections.namedtuple('relevance', ['goodness', 'missing', 'unexpected'])
+        relevance = collections.namedtuple("relevance", ["goodness", "missing", "unexpected"])
         fpath = (lambda fp: fp) if path is None else lambda fp: os.path.join(path, fp)
         missing = list()
         unexpected = list()
@@ -1134,30 +1134,30 @@ class Patch:
     def set_header(self, text):
         self.header = Header(text)
     def get_comments(self):
-        return '' if self.header is None else self.header.get_comments()
+        return "" if self.header is None else self.header.get_comments()
     def set_comments(self, text):
         if not self.header:
             self.header = Header(text)
         else:
             self.header.set_comments(text)
     def get_description(self):
-        return '' if self.header is None else self.header.get_description()
+        return "" if self.header is None else self.header.get_description()
     def set_description(self, text):
         if not self.header:
             self.header = Header(text)
         else:
             self.header.set_description(text)
     def get_header_diffstat(self):
-        return '' if self.header is None else self.header.get_diffstat()
+        return "" if self.header is None else self.header.get_diffstat()
     def set_header_diffstat(self, text=None, strip_level=None):
         if not self.header:
             self.header = Header()
         if text is None:
             stats = self.get_diffstat_stats(strip_level)
-            text = '-\n\n%s\n' % stats.list_format_string()
+            text = "-\n\n%s\n" % stats.list_format_string()
         self.header.set_diffstat(text)
     def __str__(self):
-        string = '' if self.header is None else str(self.header)
+        string = "" if self.header is None else str(self.header)
         for diff_plus in self.diff_pluses:
             string += str(diff_plus)
         return string

@@ -13,7 +13,7 @@
 ### along with this program; if not, write to the Free Software
 ### Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-'''Widget to display a complete patch'''
+"""Widget to display a complete patch"""
 
 from gi.repository import Gtk
 
@@ -27,7 +27,7 @@ def _framed(label, widget):
 
 class PatchWidget(Gtk.VBox):
     class TWSDisplay(diff.TwsLineCountDisplay):
-        LABEL = _('File(s) that add TWS: ')
+        LABEL = _("File(s) that add TWS: ")
     def __init__(self, patch, label):
         Gtk.VBox.__init__(self)
         self.epatch = patch
@@ -47,28 +47,28 @@ class PatchWidget(Gtk.VBox):
         #
         self.header_nbook = Gtk.Notebook()
         self.header_nbook.popup_enable()
-        pane.add1(_framed(_('Header'), self.header_nbook))
+        pane.add1(_framed(_("Header"), self.header_nbook))
         #
         self.description = textview.Widget()
         self.description.set_contents(self.epatch.get_description())
         self.description.view.set_editable(False)
         self.description.view.set_cursor_visible(False)
-        self.header_nbook.append_page(self.description, Gtk.Label(_('Description')))
+        self.header_nbook.append_page(self.description, Gtk.Label(_("Description")))
         #
         self.diffstats = textview.Widget()
         self.diffstats.set_contents(self.epatch.get_header_diffstat())
         self.diffstats.view.set_editable(False)
         self.diffstats.view.set_cursor_visible(False)
-        self.header_nbook.append_page(self.diffstats, Gtk.Label(_('Diff Statistics')))
+        self.header_nbook.append_page(self.diffstats, Gtk.Label(_("Diff Statistics")))
         #
         self.comments = textview.Widget(aspect_ratio=0.1)
         self.comments.set_contents(self.epatch.get_comments())
         self.comments.view.set_editable(False)
         self.comments.view.set_cursor_visible(False)
-        self.header_nbook.append_page(self.comments, Gtk.Label(_('Comments')))
+        self.header_nbook.append_page(self.comments, Gtk.Label(_("Comments")))
         #
         self.diffs_nbook = diff.DiffPlusNotebook(self.epatch.diff_pluses)
-        pane.add2(_framed(_('File Diffs'), self.diffs_nbook))
+        pane.add2(_framed(_("File Diffs"), self.diffs_nbook))
         #
         self.show_all()
     def set_patch(self, epatch):
