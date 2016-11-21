@@ -85,7 +85,7 @@ class DiffStat:
         "inserted" : "{0} insertion{1}(+)",
         "deleted" : "{0} deletion{1}(-)",
         "modified" : "{0} modification{1}(!)",
-        "unchanged" : "{0} unchanges line{1}(+)"
+        "unchanged" : "{0} unchanged line{1}(+)"
     }
     EMPTY_CRE = re.compile("^#? 0 files changed$")
     END_CRE = re.compile("^#? (\d+) files? changed(, (\d+) insertions?\(\+\))?(, (\d+) deletions?\(-\))?(, (\d+) modifications?\(\!\))?$")
