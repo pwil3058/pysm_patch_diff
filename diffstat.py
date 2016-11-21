@@ -24,6 +24,12 @@ import os
 import re
 
 
+class ErrorMalformedDiffStatSummary(Exception):
+    """Exception to signify malformed diffstat summary
+    """
+    pass
+
+
 def get_common_path(filelist):
     """Return the longest common path componet for the files in the list"""
     # Extra wrapper required because os.path.commonprefix() is string oriented
@@ -31,34 +37,48 @@ def get_common_path(filelist):
     return os.path.dirname(os.path.commonprefix(filelist))
 
 
+EMPTY_CRE = re.compile("^#? 0 files changed$")
+END_CRE = re.compile(r"^#? (\d+) files? changed" +
+                     r"(, (\d+) insertions?\(\+\))?" +
+                     r"(, (\d+) deletions?\(-\))?" +
+                     r"(, (\d+) modifications?\(\!\))?$")
+FSTATS_CRE = re.compile(r"^#? (\S+)\s*\|((binary)|(\s*(\d+)(\s+\+*-*\!*)?))$")
+BLANK_LINE_CRE = re.compile(r"^\s*$")
+DIVIDER_LINE_CRE = re.compile(r"^---$")
+
+
+def get_summary_length_starting_at(lines, index):
+    """If there is a diffstat summary starting at line "index" in the
+    given list of lines return the number of lines it contains or else
+    return 0
+    """
+    start = index
+    if DIVIDER_LINE_CRE.match(lines[index]):
+        index += 1
+    while index < len(lines) and BLANK_LINE_CRE.match(lines[index]):
+        index += 1
+    if index >= len(lines):
+        return 0
+    if EMPTY_CRE.match(lines[index]):
+        return index - start
+    count = 0
+    while index < len(lines) and FSTATS_CRE.match(lines[index]):
+        count += 1
+        index += 1
+    if index < len(lines) and END_CRE.match(lines[index]):
+        return index - start
+    elif count == 0:
+        return 0
+    raise ErrorMalformedDiffStatSummary()
+
+
+def list_summary_starts_at(lines, index):
+    """Return True if lines[index] is the start of a valid "list" diffstat summary"""
+    return get_summary_length_starting_at(lines, index) != 0
+
+
 class DiffStat:
     """Class to encapsulate diffstat related code"""
-    EMPTY_CRE = re.compile("^#? 0 files changed$")
-    END_CRE = re.compile(r"^#? (\d+) files? changed" +
-                         r"(, (\d+) insertions?\(\+\))?" +
-                         r"(, (\d+) deletions?\(-\))?" +
-                         r"(, (\d+) modifications?\(\!\))?$")
-    FSTATS_CRE = re.compile(r"^#? (\S+)\s*\|((binary)|(\s*(\d+)(\s+\+*-*\!*)?))$")
-    BLANK_LINE_CRE = re.compile(r"^\s*$")
-    DIVIDER_LINE_CRE = re.compile(r"^---$")
-
-    @staticmethod
-    def list_summary_starts_at(lines, index):
-        """Return True if lines[index] is the start of a valid "list" diffstat summary"""
-        if DiffStat.DIVIDER_LINE_CRE.match(lines[index]):
-            index += 1
-        while index < len(lines) and DiffStat.BLANK_LINE_CRE.match(lines[index]):
-            index += 1
-        if index >= len(lines):
-            return False
-        if DiffStat.EMPTY_CRE.match(lines[index]):
-            return True
-        while index < len(lines) and DiffStat.FSTATS_CRE.match(lines[index]):
-            index += 1
-            if index < len(lines) and DiffStat.END_CRE.match(lines[index]):
-                return True
-        return False
-
     class Stats:
         """Class to hold diffstat statistics."""
         _ORDERED_KEYS = ["inserted", "deleted", "modified", "unchanged"]

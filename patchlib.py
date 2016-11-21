@@ -23,6 +23,7 @@ import zlib
 import hashlib
 
 from . import gitbase85
+from . import diffstat
 
 from .diffstat import DiffStat
 
@@ -119,7 +120,7 @@ class Header:
         diffstat_starts_at = None
         index = descr_starts_at
         while index < len(lines):
-            if DiffStat.list_summary_starts_at(lines, index):
+            if diffstat.list_summary_starts_at(lines, index):
                 diffstat_starts_at = index
                 break
             index += 1
