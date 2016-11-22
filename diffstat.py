@@ -196,3 +196,7 @@ class PathDiffStats(collections.namedtuple("PathDiffStats", ["path", "diff_stats
         """Create a PathDiffStats instance form a DiffPlus (or similar)
         """
         return cls(diff_plus.get_file_path(strip_level=strip_level), diff_plus.get_diffstat_stats())
+
+    @classmethod
+    def iter_fm_diff_pluses(cls, diff_pluses, strip_level=None):
+        return (cls(dp.get_file_path(strip_level=strip_level), dp.get_diffstat_stats()) for dp in diff_pluses)

@@ -1217,8 +1217,7 @@ class Patch:
 
     def get_diffstat_stats(self, strip_level=None):
         sl = self._adjusted_strip_level(strip_level)
-
-        return [diffstat.PathDiffStats.fm_diff_plus(dp, sl) for dp in self.diff_pluses]
+        return list(diffstat.PathDiffStats.iter_fm_diff_pluses(self.diff_pluses, sl))
 
     def fix_trailing_whitespace(self, strip_level=None):
         strip_level = self._adjusted_strip_level(strip_level)
