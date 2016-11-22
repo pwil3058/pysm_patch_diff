@@ -1183,7 +1183,7 @@ class Patch:
             self.header = Header()
         if text is None:
             stats = self.get_diffstat_stats(strip_level)
-            text = "-\n\n%s\n" % stats.list_format_string()
+            text = "-\n\n%s\n" %  diffstat.format_diffstat_list(stats)
         self.header.set_diffstat(text)
 
     def __str__(self):

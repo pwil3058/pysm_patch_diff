@@ -77,6 +77,48 @@ def list_summary_starts_at(lines, index):
     return get_summary_length_starting_at(lines, index) != 0
 
 
+def format_diffstat_list(diff_stats, quiet=False, trim_names=False, comment= False, max_width=80):
+    """Return a formatted string for the list of statistics
+    """
+    import math
+    if len(diff_stats) == 0 and quiet:
+        return ""
+    string = ""
+    if trim_names:
+        common_path = get_common_path([x.path for x in diff_stats])
+        offset = len(common_path)
+    else:
+        offset = 0
+    num_files = len(diff_stats)
+    summation = DiffStat.Stats()
+    if num_files > 0:
+        len_longest_name = max([len(x.path) for x in diff_stats]) - offset
+        largest_total = max(max([x.diff_stats.get_total() for x in diff_stats]), 1)
+        sig_digits = int(math.log10(largest_total)) + 1
+        fstr = "%s {0}{1} | {2:%s} {3}\n" % ("#" if comment else "", sig_digits)
+        avail_width = max(0, max_width - (len_longest_name + 4 + sig_digits))
+        if comment:
+            avail_width -= 1
+
+        def scale(count):
+            """Scale the count to fit on a line"""
+            return min((count * avail_width) // largest_total, count)
+        for stats in diff_stats:
+            summation += stats.diff_stats
+            total = stats.diff_stats.get_total()
+            name = stats.path[offset:]
+            spaces = " " * (len_longest_name - len(name))
+            bar = stats.diff_stats.as_bar(scale)
+            string += fstr.format(name, spaces, total, bar)
+    if num_files > 0 or not quiet:
+        if comment:
+            string += "#"
+        string += " {0} file{1} changed".format(num_files, "" if num_files == 1 else "s")
+        string += summation.as_string()
+        string += "\n"
+    return string
+
+
 class DiffStat:
     """Class to encapsulate diffstat related code"""
     class Stats:
@@ -191,43 +233,3 @@ class DiffStat:
                 if pstat.path == item:
                     return True
             return False
-
-        def list_format_string(self, quiet=False, comment=False, trim_names=False, max_width=80):
-            """Return a formatted string for the list of statistics
-            """
-            import math
-            if len(self) == 0 and quiet:
-                return ""
-            string = ""
-            if trim_names:
-                common_path = get_common_path([x.path for x in self])
-                offset = len(common_path)
-            else:
-                offset = 0
-            num_files = len(self)
-            summation = DiffStat.Stats()
-            if num_files > 0:
-                len_longest_name = max([len(x.path) for x in self]) - offset
-                largest_total = max(max([x.diff_stats.get_total() for x in self]), 1)
-                fstr = "%s {0}{1} | {2:%s} {3}\n" % ("#" if comment else "", int(math.log10(largest_total) + 1))
-                avail_width = max(0, max_width - (len_longest_name + 9))
-                if comment:
-                    avail_width -= 1
-
-                def scale(count):
-                    """Scale the count to fit on a line"""
-                    return min((count * avail_width) // largest_total, count)
-                for stats in self:
-                    summation += stats.diff_stats
-                    total = stats.diff_stats.get_total()
-                    name = stats.path[offset:]
-                    spaces = " " * (len_longest_name - len(name))
-                    bar = stats.diff_stats.as_bar(scale)
-                    string += fstr.format(name, spaces, total, bar)
-            if num_files > 0 or not quiet:
-                if comment:
-                    string += "#"
-                string += " {0} file{1} changed".format(num_files, "" if num_files == 1 else "s")
-                string += summation.as_string()
-                string += "\n"
-            return string
