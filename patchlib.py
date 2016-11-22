@@ -1086,7 +1086,7 @@ class Patch:
             text = re.sub("\r\n", os.linesep, msg.get_payload())
         else:
             text = msg.get_payload()
-        patch = parse_text(text, num_strip_levels=num_strip_levels)
+        patch = Patch.parse_text(text, num_strip_levels=num_strip_levels)
         if subject:
             descr = patch.get_description()
             patch.set_description("\n".join([subject, descr]))

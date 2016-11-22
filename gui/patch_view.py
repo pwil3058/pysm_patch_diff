@@ -17,7 +17,9 @@
 
 from gi.repository import Gtk
 
+from ...gtx import recollect
 from ...gtx import textview
+
 from . import diff
 
 def _framed(label, widget):
@@ -28,7 +30,8 @@ def _framed(label, widget):
 class PatchWidget(Gtk.VBox):
     class TWSDisplay(diff.TwsLineCountDisplay):
         LABEL = _("File(s) that add TWS: ")
-    def __init__(self, patch, label):
+
+    def __init__(self, patch, label, header_aspect_ratio = 0.15):
         Gtk.VBox.__init__(self)
         self.epatch = patch
         #
@@ -38,39 +41,44 @@ class PatchWidget(Gtk.VBox):
         self.tws_display.set_value(len(self.epatch.report_trailing_whitespace()))
         hbox = Gtk.HBox()
         hbox.pack_start(self.status_box, expand=False, fill=True, padding=0)
-        hbox.pack_start(Gtk.Label(label), expand=False, fill=True, padding=0)
+        self._label = Gtk.Label(label)
+        hbox.pack_start(self._label, expand=False, fill=True, padding=0)
         hbox.pack_end(self.tws_display, expand=False, fill=True, padding=0)
         self.pack_start(hbox, expand=False, fill=True, padding=0)
         #
-        pane = Gtk.VPaned()
-        self.pack_start(pane, expand=True, fill=True, padding=0)
+        self._vpaned = Gtk.VPaned()
+        self.pack_start(self._vpaned, expand=True, fill=True, padding=0)
         #
         self.header_nbook = Gtk.Notebook()
         self.header_nbook.popup_enable()
-        pane.add1(_framed(_("Header"), self.header_nbook))
+        self._vpaned.add1(_framed(_("Header"), self.header_nbook))
         #
-        self.description = textview.Widget()
+        self.description = textview.Widget(aspect_ratio=header_aspect_ratio)
         self.description.set_contents(self.epatch.get_description())
         self.description.view.set_editable(False)
         self.description.view.set_cursor_visible(False)
         self.header_nbook.append_page(self.description, Gtk.Label(_("Description")))
         #
-        self.diffstats = textview.Widget()
+        self.diffstats = textview.Widget(aspect_ratio=header_aspect_ratio)
         self.diffstats.set_contents(self.epatch.get_header_diffstat())
         self.diffstats.view.set_editable(False)
         self.diffstats.view.set_cursor_visible(False)
         self.header_nbook.append_page(self.diffstats, Gtk.Label(_("Diff Statistics")))
         #
-        self.comments = textview.Widget(aspect_ratio=0.1)
+        self.comments = textview.Widget(aspect_ratio=header_aspect_ratio)
         self.comments.set_contents(self.epatch.get_comments())
         self.comments.view.set_editable(False)
         self.comments.view.set_cursor_visible(False)
         self.header_nbook.append_page(self.comments, Gtk.Label(_("Comments")))
         #
         self.diffs_nbook = diff.DiffPlusNotebook(self.epatch.diff_pluses)
-        pane.add2(_framed(_("File Diffs"), self.diffs_nbook))
+        self._vpaned.add2(_framed(_("File Diffs"), self.diffs_nbook))
         #
         self.show_all()
+
+    def set_label(self, label_text):
+        self._label.set_text(label_text)
+
     def set_patch(self, epatch):
         if epatch.get_hash_digest() == self.epatch.get_hash_digest():
             return
@@ -80,3 +88,11 @@ class PatchWidget(Gtk.VBox):
         self.description.set_contents(self.epatch.get_description())
         self.diffstats.set_contents(self.epatch.get_header_diffstat())
         self.diffs_nbook.set_diff_pluses(self.epatch.diff_pluses)
+
+    def set_paned_notify_fm_recollect(self, section, oname):
+        self._vpaned.set_position(recollect.get(section, oname))
+        self._vpaned.connect("notify", self._paned_notify_cb, section, oname)
+
+    def _paned_notify_cb(self, widget, parameter, section, oname):
+        if parameter.name == "position":
+            recollect.set(section, oname, str(widget.get_position()))
