@@ -499,7 +499,7 @@ class DiffHunk(_Lines):
         self.after = after
 
     def get_diffstat_stats(self):
-        return DiffStat.Stats()
+        return diffstat.DiffStats()
 
     def fix_trailing_whitespace(self):
         return list()
@@ -597,7 +597,7 @@ class Diff:
         return bad_lines
 
     def get_diffstat_stats(self):
-        stats = DiffStat.Stats()
+        stats = diffstat.DiffStats()
         for hunk in self.hunks:
             stats += hunk.get_diffstat_stats()
         return stats
@@ -648,7 +648,7 @@ class UnifiedDiffHunk(DiffHunk):
         return bad_lines
 
     def get_diffstat_stats(self):
-        stats = DiffStat.Stats()
+        stats = diffstat.DiffStats()
         for index in range(len(self.lines)):
             if self.lines[index].startswith("-"):
                 stats.incr("deleted")
@@ -737,7 +737,7 @@ class ContextDiffHunk(DiffHunk):
         return bad_lines
 
     def get_diffstat_stats(self):
-        stats = DiffStat.Stats()
+        stats = diffstat.DiffStats()
         for index in range(self.before.offset + 1, self.before.offset + self.before.numlines):
             if self.lines[index].startswith("- "):
                 stats.incr("deleted")
@@ -1020,7 +1020,7 @@ class DiffPlus:
 
     def get_diffstat_stats(self):
         if self.diff is None:
-            return DiffStat.Stats()
+            return diffstat.DiffStats()
         return self.diff.get_diffstat_stats()
 
     def get_file_path(self, strip_level):
