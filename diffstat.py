@@ -195,6 +195,7 @@ class DiffStat:
         def list_format_string(self, quiet=False, comment=False, trim_names=False, max_width=80):
             """Return a formatted string for the list of statistics
             """
+            import math
             if len(self) == 0 and quiet:
                 return ""
             string = ""
@@ -207,15 +208,15 @@ class DiffStat:
             summation = DiffStat.Stats()
             if num_files > 0:
                 len_longest_name = max([len(x.path) for x in self]) - offset
-                fstr = "%s {0}{1} |{2:5} {3}\n" % ("#" if comment else "")
                 largest_total = max(max([x.diff_stats.get_total() for x in self]), 1)
+                fstr = "%s {0}{1} | {2:%s} {3}\n" % ("#" if comment else "", int(math.log10(largest_total) + 1))
                 avail_width = max(0, max_width - (len_longest_name + 9))
                 if comment:
                     avail_width -= 1
 
                 def scale(count):
                     """Scale the count to fit on a line"""
-                    return (count * avail_width) // largest_total
+                    return min((count * avail_width) // largest_total, count)
                 for stats in self:
                     summation += stats.diff_stats
                     total = stats.diff_stats.get_total()
