@@ -25,8 +25,6 @@ import hashlib
 from . import gitbase85
 from . import diffstat
 
-from .diffstat import DiffStat
-
 # TODO: convert methods that return lists to iterators
 
 # Useful named tuples to make code clearer
@@ -1218,13 +1216,9 @@ class Patch:
             yield diff_plus.get_file_path_plus(strip_level=strip_level)
 
     def get_diffstat_stats(self, strip_level=None):
-        strip_level = self._adjusted_strip_level(strip_level)
+        sl = self._adjusted_strip_level(strip_level)
 
-        def fds(diff_plus):
-            file_path = diff_plus.get_file_path(strip_level=strip_level)
-            d_stats = diff_plus.get_diffstat_stats()
-            return DiffStat.PathStats(file_path, d_stats)
-        return DiffStat.PathStatsList((fds(diff_plus) for diff_plus in self.diff_pluses))
+        return [diffstat.PathDiffStats.fm_diff_plus(dp, sl) for dp in self.diff_pluses]
 
     def fix_trailing_whitespace(self, strip_level=None):
         strip_level = self._adjusted_strip_level(strip_level)

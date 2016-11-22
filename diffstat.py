@@ -20,6 +20,7 @@
 __all__ = []
 __author__ = "Peter Williams <pwil3058@gmail.com>"
 
+import collections
 import os
 import re
 
@@ -77,7 +78,7 @@ def list_summary_starts_at(lines, index):
     return get_summary_length_starting_at(lines, index) != 0
 
 
-def format_diffstat_list(diff_stats_list, quiet=False, trim_names=False, comment= False, max_width=80):
+def format_diffstat_list(diff_stats_list, quiet=False, trim_names=False, comment=False, max_width=80):
     """Return a formatted string for the list of statistics
     """
     import math
@@ -187,50 +188,11 @@ class DiffStats:
             string += char * count
         return string
 
-
-class DiffStat:
-    """Class to encapsulate diffstat related code"""
-
-    class PathStats:
-        """A file path and associated diffstat statistics
+class PathDiffStats(collections.namedtuple("PathDiffStats", ["path", "diff_stats"])):
+    """Named tuple to hold a file path and associated "diffstat" stats
+    """
+    @classmethod
+    def fm_diff_plus(cls, diff_plus, strip_level=None):
+        """Create a PathDiffStats instance form a DiffPlus (or similar)
         """
-        def __init__(self, path, diff_stats):
-            self.path = path
-            self.diff_stats = diff_stats
-
-        def __eq__(self, other):
-            return self.path == other.path
-
-        def __ne__(self, other):
-            return self.path != other.path
-
-        def __lt__(self, other):
-            return self.path < other.path
-
-        def __gt__(self, other):
-            return self.path > other.path
-
-        def __le__(self, other):
-            return self.path <= other.path
-
-        def __ge__(self, other):
-            return self.path >= other.path
-
-        def __iadd__(self, other):
-            if isinstance(other, DiffStat.PathStats):
-                assert other.path != self.path
-                self.diff_stats += other.diff_stats
-            else:
-                self.diff_stats += other
-            return self
-
-    class PathStatsList(list):
-        """A list of path statistics
-        """
-        def __contains__(self, item):
-            if isinstance(item, DiffStat.PathStats):
-                return list.__contains__(self, item)
-            for pstat in self:
-                if pstat.path == item:
-                    return True
-            return False
+        return cls(diff_plus.get_file_path(strip_level=strip_level), diff_plus.get_diffstat_stats())
