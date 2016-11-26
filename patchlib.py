@@ -630,8 +630,7 @@ class DiffPlus:
             yield line
 
     def get_preamble_for_type(self, preamble_type):
-        index = self.preambles.get_index_for_type(preamble_type)
-        return None if index is None else self.preambles[index]
+        return self.preambles.get(preamble_type, None)
 
     def get_new_mode(self):
         git_preamble = self.get_preamble_for_type("git")
@@ -763,7 +762,7 @@ class Patch:
     def estimate_strip_level(self):
         trues = 0
         for diff_plus in self.diff_pluses:
-            if diff_plus.preambles.get_index_for_type("git") is not None:
+            if "git" in diff_plus.preambles:
                 # git patches will always have a strip level of 1
                 return 1
             check = _file_data_consistent_with_strip_one(diff_plus.diff.file_data)

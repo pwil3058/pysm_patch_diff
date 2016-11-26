@@ -113,6 +113,9 @@ class FilePathPlus:
         self.status = status
         self.expath = expath
 
+    def __str__(self):
+        return "FilePathPlus(path={}, status=\"{}\", expath={})".format(self.path, self.status, self.expath)
+
     @staticmethod
     def fm_pair(pair, strip=lambda x: x):
         def get_path(x):

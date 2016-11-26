@@ -186,49 +186,50 @@ class Preambles(list):
     def __str__(self):
         return "".join([str(preamble) for preamble in self])
 
+    def __contains__(self, preamble_type_id):
+        for preamble in self:
+            if preamble.preamble_type_id == preamble_type_id:
+                return True
+        return False
+
+    def get(self, preamble_type_id, default=None):
+        for preamble in self:
+            if preamble.preamble_type_id == preamble_type_id:
+                return preamble
+        return default
+
     def get_types(self):
         return [item.preamble_type_id for item in self]
 
-    def get_index_for_type(self, preamble_type_id):
-        for index in range(len(self)):
-            if self[index].preamble_type_id == preamble_type_id:
-                return index
-        return None
-
     def get_file_path(self, strip_level=0):
-        paths = {}
-        for preamble in self:
-            path = preamble.get_file_path(strip_level=strip_level)
-            if path:
-                paths[preamble.preamble_type_id] = path
-        for key in Preambles.path_precedence:
-            if key in paths:
-                return paths[key]
+        for preamble_type_id in self.path_precedence:
+            preamble = self.get(preamble_type_id)
+            if preamble:
+                path = preamble.get_file_path(strip_level=strip_level)
+                if path:
+                    return path
         return None
 
     def get_file_path_plus(self, strip_level=0):
-        paths_plus = {}
-        for preamble in self:
-            path_plus = preamble.get_file_path_plus(strip_level=strip_level)
-            if path_plus:
-                paths_plus[preamble.preamble_type_id] = path_plus
-        for key in Preambles.expath_precedence:
-            if key in paths_plus:
-                return paths_plus[key]
+        for preamble_type_id in self.path_precedence:
+            preamble = self.get(preamble_type_id)
+            if preamble:
+                path_plus = preamble.get_file_path_plus(strip_level=strip_level)
+                if path_plus:
+                    return path_plus
         return None
 
     def get_file_expath(self, strip_level=0):
-        expaths = {}
-        for preamble in self:
-            expath = preamble.get_file_expath(strip_level=strip_level)
-            if expath:
-                expaths[preamble.preamble_type_id] = expath
-        for key in Preambles.expath_precedence:
-            if key in expaths:
-                return expaths[key]
+        for preamble_type_id in self.expath_precedence:
+            preamble = self.get(preamble_type_id)
+            if preamble:
+                expath = preamble.get_file_expath(strip_level=strip_level)
+                if path:
+                    return expath
         return None
 
 DIFF_PREAMBLE_TYPES = [GitPreamble, DiffPreamble, IndexPreamble]
+DIFF_PREAMBLE_TYPE_IDS = [dpt.preamble_type_id for dpt in DIFF_PREAMBLE_TYPES]
 
 def get_preamble_at(lines, index, raise_if_malformed, exclude_subtypes_in=None):
     for subtype in DIFF_PREAMBLE_TYPES:
