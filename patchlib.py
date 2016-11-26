@@ -24,19 +24,27 @@ import hashlib
 
 from . import gitbase85
 from . import diffstat
+from . import diff_preamble
+
+from .diff_preamble import Preambles
+from .pd_utils import TextLines as _Lines
+from .pd_utils import PATH_RE_STR as _PATH_RE_STR
+from .pd_utils import BEFORE_AFTER as _PAIR
+from .pd_utils import FilePathPlus
+from .pd_utils import gen_strip_level_function
+from .pd_utils import file_path_fm_pair as _file_path_fm_pair
+from .pd_utils import is_non_null as _is_non_null
 
 # TODO: convert methods that return lists to iterators
 
 # Useful named tuples to make code clearer
 _CHUNK = collections.namedtuple("_CHUNK", ["start", "length"])
 _HUNK = collections.namedtuple("_HUNK", ["offset", "start", "length", "numlines"])
-_PAIR = collections.namedtuple("_PAIR", ["before", "after"])
 _FILE_AND_TS = collections.namedtuple("_FILE_AND_TS", ["path", "timestamp"])
 _FILE_AND_TWS_LINES = collections.namedtuple("_FILE_AND_TWS_LINES", ["path", "tws_lines"])
 _DIFF_DATA = collections.namedtuple("_DIFF_DATA", ["file_data", "hunks"])
 
 # Useful strings for including in regular expressions
-_PATH_RE_STR = """"([^"]+)"|(\S+)"""
 _TIMESTAMP_RE_STR = "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{9})? [-+]{1}\d{4}"
 _ALT_TIMESTAMP_RE_STR = "[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{2}:\d{2}:\d{2} \d{4} [-+]{1}\d{4}"
 _EITHER_TS_RE_STR = "(%s|%s)" % (_TIMESTAMP_RE_STR, _ALT_TIMESTAMP_RE_STR)
@@ -65,45 +73,9 @@ class Bug(Exception):
     pass
 
 
-def gen_strip_level_function(level):
-    """Return a function for stripping the specified levels off a file path"""
-    def strip_n(path, level):
-        try:
-            return path.split(os.sep, level)[level]
-        except IndexError:
-            raise TooMayStripLevels(_("Strip level too large"), path, level)
-    level = int(level)
-    if level == 0:
-        return lambda path: path
-    return lambda path: path if path.startswith(os.sep) else strip_n(path, level)
-
-
 def _trim_trailing_ws(line):
     """Return the given line with any trailing white space removed"""
     return re.sub("[ \t]+$", "", line)
-
-
-class _Lines:
-    def __init__(self, contents=None):
-        if contents is None:
-            self.lines = list()
-        elif isinstance(contents, str):
-            self.lines = contents.splitlines(True)
-        else:
-            self.lines = list(contents)
-
-    def __str__(self):
-        return "".join(self.lines)
-
-    def __iter__(self):
-        for line in self.lines:
-            yield line
-
-    def append(self, data):
-        if isinstance(data, str):
-            self.lines += data.splitlines(True)
-        else:
-            self.lines += list(data)
 
 
 class Header:
@@ -160,334 +132,6 @@ class Header:
         if text and not text.endswith("\n"):
             text += "\n"
         self.diffstat_lines = _Lines(text)
-
-
-def _is_non_null(path):
-    return path and path != "/dev/null"
-
-
-def _file_path_fm_pair(pair, strip=lambda x: x):
-    def get_path(x):
-        return x if isinstance(x, str) else x.path
-    after = get_path(pair.after)
-    if _is_non_null(after):
-        return strip(after)
-    before = get_path(pair.before)
-    if _is_non_null(before):
-        return strip(before)
-    return None
-
-
-def _file_outcome_fm_pair(pair):
-    def get_path(x):
-        return x if isinstance(x, str) else x.path
-    if get_path(pair.after) == "/dev/null":
-        return -1
-    if get_path(pair.before) == "/dev/null":
-        return 1
-    return 0
-
-
-def _file_data_consistent_with_strip_one(pair):
-    strip = gen_strip_level_function(1)
-
-    def get_path(x):
-        return x if isinstance(x, str) else x.path
-    before = get_path(pair.before)
-    if not _is_non_null(before):
-        return None
-    after = get_path(pair.after)
-    if not _is_non_null(after):
-        return None
-    try:
-        return strip(before) == strip(after)
-    except TooMayStripLevels:
-        return False
-
-
-class FilePathPlus:
-    ADDED = "+"
-    EXTANT = " "
-    DELETED = "-"
-
-    def __init__(self, path, status, expath=None):
-        self.path = path
-        self.status = status
-        self.expath = expath
-
-    @staticmethod
-    def fm_pair(pair, strip=lambda x: x):
-        def get_path(x):
-            return x if isinstance(x, str) else x.path
-        path = None
-        status = None
-        after = get_path(pair.after)
-        before = get_path(pair.before)
-        if _is_non_null(after):
-            path = strip(after)
-            status = FilePathPlus.EXTANT if _is_non_null(before) else FilePathPlus.ADDED
-        elif _is_non_null(before):
-            path = strip(before)
-            status = FilePathPlus.DELETED
-        else:
-            return None
-        return FilePathPlus(path=path, status=status, expath=None)
-
-
-class Preamble(_Lines):
-    subtypes = list()
-
-    @staticmethod
-    def get_preamble_at(lines, index, raise_if_malformed, exclude_subtypes_in=set()):
-        for subtype in Preamble.subtypes:
-            if subtype in exclude_subtypes_in:
-                continue
-            preamble, next_index = subtype.get_preamble_at(lines, index, raise_if_malformed)
-            if preamble is not None:
-                return (preamble, next_index)
-        return (None, index)
-
-    @staticmethod
-    def parse_lines(lines):
-        """Parse list of lines and return a valid Preamble or raise exception"""
-        preamble, index = Preamble.get_preamble_at(lines, 0, raise_if_malformed=True)
-        if not preamble or index < len(lines):
-            raise ParseError(_("Not a valid preamble."))
-        return preamble
-
-    @staticmethod
-    def parse_text(text):
-        """Parse text and return a valid Preamble or raise exception"""
-        return DiffPlus.parse_lines(text.splitlines(True))
-
-    def __init__(self, preamble_type, lines, file_data, extras=None):
-        _Lines.__init__(self, lines)
-        self.preamble_type = preamble_type
-        self.file_data = file_data
-        self.extras = extras
-
-    def get_file_path(self, strip_level=0):
-        strip = gen_strip_level_function(strip_level)
-        if isinstance(self.file_data, str):
-            return strip(self.file_data)
-        elif isinstance(self.file_data, _PAIR):
-            return _file_path_fm_pair(self.file_data, strip)
-        else:
-            return None
-
-    def get_file_path_plus(self, strip_level=0):
-        if isinstance(self.file_data, str):
-            return FilePathPlus(path=self.get_file_path(strip_level), status=None, expath=None)
-        elif isinstance(self.file_data, _PAIR):
-            return FilePathPlus.fm_pair(self.file_data, gen_strip_level_function(strip_level))
-        else:
-            return None
-
-    def get_file_expath(self, strip_level=0):
-        return None
-
-
-class GitPreamble(Preamble):
-    DIFF_CRE = re.compile("^diff\s+--git\s+({0})\s+({1})$".format(_PATH_RE_STR, _PATH_RE_STR))
-    EXTRAS_CRES = {
-        "old mode": re.compile("^(old mode)\s+(\d*)$"),
-        "new mode": re.compile("^(new mode)\s+(\d*)$"),
-        "deleted file mode": re.compile("^(deleted file mode)\s+(\d*)$"),
-        "new file mode":  re.compile("^(new file mode)\s+(\d*)$"),
-        "copy from": re.compile("^(copy from)\s+({0})$".format(_PATH_RE_STR)),
-        "copy to": re.compile("^(copy to)\s+({0})$".format(_PATH_RE_STR)),
-        "rename from": re.compile("^(rename from)\s+({0})$".format(_PATH_RE_STR)),
-        "rename to": re.compile("^(rename to)\s+({0})$".format(_PATH_RE_STR)),
-        "similarity index": re.compile("^(similarity index)\s+((\d*)%)$"),
-        "dissimilarity index": re.compile("^(dissimilarity index)\s+((\d*)%)$"),
-        "index": re.compile("^(index)\s+(([a-fA-F0-9]+)..([a-fA-F0-9]+)( (\d*))?)$"),
-    }
-
-    @staticmethod
-    def get_preamble_at(lines, index, raise_if_malformed):
-        match = GitPreamble.DIFF_CRE.match(lines[index])
-        if not match:
-            return (None, index)
-        file1 = match.group(3) if match.group(3) else match.group(4)
-        file2 = match.group(6) if match.group(6) else match.group(7)
-        extras = {}
-        next_index = index + 1
-        while next_index < len(lines):
-            found = False
-            for cre in GitPreamble.EXTRAS_CRES:
-                match = GitPreamble.EXTRAS_CRES[cre].match(lines[next_index])
-                if match:
-                    extras[match.group(1)] = match.group(2)
-                    next_index += 1
-                    found = True
-                    break
-            if not found:
-                break
-        return (GitPreamble(lines[index:next_index], _PAIR(file1, file2), extras), next_index)
-
-    def __init__(self, lines, file_data, extras=None):
-        if extras is None:
-            etxras = {}
-        Preamble.__init__(self, "git", lines=lines, file_data=file_data, extras=extras)
-
-    def get_file_path(self, strip_level=0):
-        strip = gen_strip_level_function(strip_level)
-        return _file_path_fm_pair(self.file_data, strip)
-
-    def get_file_path_plus(self, strip_level=0):
-        path_plus = Preamble.get_file_path_plus(self, strip_level=strip_level)
-        if path_plus and path_plus.status == FilePathPlus.ADDED:
-            path_plus.expath = self.get_file_expath(strip_level=strip_level)
-        return path_plus
-
-    def get_file_expath(self, strip_level=0):
-        for key in ["copy from", "rename from"]:
-            if key in self.extras:
-                strip = gen_strip_level_function(strip_level)
-                return strip(self.extras[key])
-        return None
-
-    def is_compatible_with(self, git_hash):
-        try:
-            before_hash, _dummy = self.extras["index"].split("..")
-            if len(before_hash) > len(git_hash):
-                return before_hash.startswith(git_hash)
-            else:
-                return git_hash.startswith(before_hash)
-        except KeyError:
-            return None  # means "don't know"
-
-Preamble.subtypes.append(GitPreamble)
-
-
-class DiffPreamble(Preamble):
-    CRE = re.compile("^diff(\s.+)\s+({0})\s+({1})$".format(_PATH_RE_STR, _PATH_RE_STR))
-
-    @staticmethod
-    def get_preamble_at(lines, index, raise_if_malformed):
-        match = DiffPreamble.CRE.match(lines[index])
-        if not match or (match.group(1) and match.group(1).find("--git") != -1):
-            return (None, index)
-        file1 = match.group(3) if match.group(3) else match.group(4)
-        file2 = match.group(6) if match.group(6) else match.group(7)
-        next_index = index + 1
-        return (DiffPreamble(lines[index:next_index], _PAIR(file1, file2), match.group(1)), next_index)
-
-    def __init__(self, lines, file_data, extras=None):
-        Preamble.__init__(self, "diff", lines=lines, file_data=file_data, extras=extras)
-
-    def get_file_path(self, strip_level=0):
-        strip = gen_strip_level_function(strip_level)
-        return _file_path_fm_pair(self.file_data, strip)
-
-Preamble.subtypes.append(DiffPreamble)
-
-
-class IndexPreamble(Preamble):
-    FILE_RCE = re.compile("^Index:\s+({0})(.*)$".format(_PATH_RE_STR))
-    SEP_RCE = re.compile("^==*$")
-
-    @staticmethod
-    def get_preamble_at(lines, index, raise_if_malformed):
-        match = IndexPreamble.FILE_RCE.match(lines[index])
-        if not match:
-            return (None, index)
-        filepath = match.group(2) if match.group(2) else match.group(3)
-        next_index = index + (2 if (index + 1) < len(lines) and IndexPreamble.SEP_RCE.match(lines[index + 1]) else 1)
-        return (IndexPreamble(lines[index:next_index], filepath), next_index)
-
-    def __init__(self, lines, file_data, extras=None):
-        Preamble.__init__(self, "index", lines=lines, file_data=file_data, extras=extras)
-
-    def get_file_path(self, strip_level=0):
-        strip = gen_strip_level_function(strip_level)
-        return strip(self.file_data)
-
-Preamble.subtypes.append(IndexPreamble)
-
-
-class Preambles(list):
-    path_precedence = ["index", "git", "diff"]
-    expath_precedence = ["git", "index", "diff"]
-
-    @staticmethod
-    def get_preambles_at(lines, index, raise_if_malformed):
-        preambles = Preambles()
-        # make sure we don't get more than one preeample of the same type
-        already_seen = set()
-        while index < len(lines):
-            preamble, index = Preamble.get_preamble_at(lines, index,
-                                                       raise_if_malformed,
-                                                       exclude_subtypes_in=already_seen)
-            if preamble:
-                already_seen.add(type(preamble))
-                preambles.append(preamble)
-            else:
-                break
-        return (preambles, index)
-
-    @staticmethod
-    def parse_lines(lines):
-        """Parse list of lines and return a valid Preambles list or raise exception"""
-        preambles, index = Preambles.get_preambles_at(lines, 0, raise_if_malformed=True)
-        if not preambles or index < len(lines):
-            raise ParseError(_("Not a valid preamble list."))
-        return preambles
-
-    @staticmethod
-    def parse_text(text):
-        """Parse text and return a valid Preambles list or raise exception"""
-        return DiffPlus.parse_lines(text.splitlines(True))
-
-    def __init__(self, preambles=None):
-        if preambles is not None:
-            for preamble in preambles:
-                self.append(preamble)
-
-    def __str__(self):
-        return "".join([str(preamble) for preamble in self])
-
-    def get_types(self):
-        return [item.preamble_type for item in self]
-
-    def get_index_for_type(self, preamble_type):
-        for index in range(len(self)):
-            if self[index].preamble_type == preamble_type:
-                return index
-        return None
-
-    def get_file_path(self, strip_level=0):
-        paths = {}
-        for preamble in self:
-            path = preamble.get_file_path(strip_level=strip_level)
-            if path:
-                paths[preamble.preamble_type] = path
-        for key in Preambles.path_precedence:
-            if key in paths:
-                return paths[key]
-        return None
-
-    def get_file_path_plus(self, strip_level=0):
-        paths_plus = {}
-        for preamble in self:
-            path_plus = preamble.get_file_path_plus(strip_level=strip_level)
-            if path_plus:
-                paths_plus[preamble.preamble_type] = path_plus
-        for key in Preambles.expath_precedence:
-            if key in paths_plus:
-                return paths_plus[key]
-        return None
-
-    def get_file_expath(self, strip_level=0):
-        expaths = {}
-        for preamble in self:
-            expath = preamble.get_file_expath(strip_level=strip_level)
-            if expath:
-                expaths[preamble.preamble_type] = expath
-        for key in Preambles.expath_precedence:
-            if key in expaths:
-                return expaths[key]
-        return None
 
 
 class DiffHunk(_Lines):
@@ -935,7 +579,7 @@ class DiffPlus:
     Includes (optional) preambles and trailing junk such as quilt's separators."""
     @staticmethod
     def get_diff_plus_at(lines, start_index, raise_if_malformed=False):
-        preambles, index = Preambles.get_preambles_at(lines, start_index, raise_if_malformed)
+        preambles, index = diff_preamble.get_preambles_at(lines, start_index, raise_if_malformed)
         if index >= len(lines):
             if preambles:
                 return (DiffPlus(preambles, None), index)
