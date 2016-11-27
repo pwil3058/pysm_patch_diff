@@ -25,7 +25,7 @@ from . import gitbase85
 
 from .pd_utils import TextLines as _Lines
 from .pd_utils import PATH_RE_STR as _PATH_RE_STR
-from .pd_utils import BEFORE_AFTER as _PAIR
+from .pd_utils import BEFORE_AFTER
 from .pd_utils import gen_strip_level_function
 from .pd_utils import file_path_fm_pair as _file_path_fm_pair
 from .pd_utils import FilePathPlus
@@ -69,8 +69,6 @@ def _trim_trailing_ws(line):
 
 
 class Diff:
-    subtypes = list()
-
     @staticmethod
     def _get_file_data_at(cre, lines, index):
         match = cre.match(lines[index])
@@ -79,24 +77,27 @@ class Diff:
         filepath = match.group(2) if match.group(2) else match.group(3)
         return (_FILE_AND_TS(filepath, match.group(4)), index + 1)
 
-    @staticmethod
-    def _get_diff_at(subtype, lines, start_index, raise_if_malformed=False):
-        """generic function that works for unified and context diffs"""
+    @classmethod
+    def get_diff_at(cls, lines, start_index, raise_if_malformed=False):
+        """If there is a valid "cls" diff in "lines" starting at
+        "index" extract and return it along with the index for the
+        first line after the diff.
+        """
         if len(lines) - start_index < 2:
             return (None, start_index)
         hunks = list()
         index = start_index
-        before_file_data, index = subtype.get_before_file_data_at(lines, index)
+        before_file_data, index = cls.get_before_file_data_at(lines, index)
         if not before_file_data:
             return (None, start_index)
-        after_file_data, index = subtype.get_after_file_data_at(lines, index)
+        after_file_data, index = cls.get_after_file_data_at(lines, index)
         if not after_file_data:
             if raise_if_malformed:
                 raise ParseError(_("Missing unified diff after file data."), index)
             else:
                 return (None, start_index)
         while index < len(lines):
-            hunk, index = subtype.get_hunk_at(lines, index)
+            hunk, index = cls.get_hunk_at(lines, index)
             if hunk is None:
                 break
             hunks.append(hunk)
@@ -105,28 +106,7 @@ class Diff:
                 raise ParseError(_("Expected unified diff hunks not found."), index)
             else:
                 return (None, start_index)
-        return (subtype(lines[start_index:start_index + 2], _PAIR(before_file_data, after_file_data), hunks), index)
-
-    @staticmethod
-    def get_diff_at(lines, index, raise_if_malformed):
-        for subtype in Diff.subtypes:
-            diff, next_index = subtype.get_diff_at(lines, index, raise_if_malformed)
-            if diff is not None:
-                return (diff, next_index)
-        return (None, index)
-
-    @staticmethod
-    def parse_lines(lines):
-        """Parse list of lines and return a valid Diff or raise exception"""
-        diff, index = Diff.get_diff_at(lines, 0, raise_if_malformed=True)
-        if not diff or index < len(lines):
-            raise ParseError(_("Not a valid diff."))
-        return diff
-
-    @staticmethod
-    def parse_text(text):
-        """Parse text and return a valid DiffPlus or raise exception"""
-        return Diff.parse_lines(text.splitlines(True))
+        return (cls(lines[start_index:start_index + 2], BEFORE_AFTER(before_file_data, after_file_data), hunks), index)
 
     def __init__(self, diff_type, lines, file_data, hunks):
         self.header = _Lines(lines)
@@ -166,7 +146,7 @@ class Diff:
         strip = gen_strip_level_function(strip_level)
         if isinstance(self.file_data, str):
             return strip(self.file_data)
-        elif isinstance(self.file_data, _PAIR):
+        elif isinstance(self.file_data, BEFORE_AFTER):
             return _file_path_fm_pair(self.file_data, strip)
         else:
             return None
@@ -175,13 +155,13 @@ class Diff:
         strip = gen_strip_level_function(strip_level)
         if isinstance(self.file_data, str):
             return FilePathPlus(path=strip(self.file_data), status=None, expath=None)
-        elif isinstance(self.file_data, _PAIR):
+        elif isinstance(self.file_data, BEFORE_AFTER):
             return FilePathPlus.fm_pair(self.file_data, strip)
         else:
             return None
 
     def get_outcome(self):
-        if isinstance(self.file_data, _PAIR):
+        if isinstance(self.file_data, BEFORE_AFTER):
             return _file_outcome_fm_pair(self.file_data)
         return None
 
@@ -270,14 +250,8 @@ class UnifiedDiff(Diff):
         after_chunk = _CHUNK(int(match.group(4)), after_length)
         return (UnifiedDiffHunk(lines[start_index:index], before_chunk, after_chunk), index)
 
-    @staticmethod
-    def get_diff_at(lines, start_index, raise_if_malformed=False):
-        return Diff._get_diff_at(UnifiedDiff, lines, start_index, raise_if_malformed)
-
     def __init__(self, lines, file_data, hunks):
         Diff.__init__(self, "unified", lines, file_data, hunks)
-
-Diff.subtypes.append(UnifiedDiff)
 
 
 class ContextDiffHunk(_Lines):
@@ -413,14 +387,8 @@ class ContextDiff(Diff):
                            index - after_start_index)
         return (ContextDiffHunk(lines[start_index:index], before_hunk, after_hunk), index)
 
-    @staticmethod
-    def get_diff_at(lines, start_index, raise_if_malformed=False):
-        return Diff._get_diff_at(ContextDiff, lines, start_index, raise_if_malformed)
-
     def __init__(self, lines, file_data, hunks):
         Diff.__init__(self, "context", lines, file_data, hunks)
-
-Diff.subtypes.append(ContextDiff)
 
 
 class GitBinaryDiffData(_Lines):
@@ -493,4 +461,27 @@ class GitBinaryDiff(Diff):
     def get_outcome(self):
         return None
 
-Diff.subtypes.append(GitBinaryDiff)
+# NB. these are ordered by likelihood of being encountered
+DIFF_TYPES = [UnifiedDiff, GitBinaryDiff, ContextDiff]
+
+def get_diff_at(lines, index, raise_if_malformed):
+    """If there is a valid unified, context or git binary diff in
+    "lines" starting at "index" extract and return it along with the
+    index for the first line after the diff.
+    """
+    for diff_type in DIFF_TYPES:
+        diff, next_index = diff_type.get_diff_at(lines, index, raise_if_malformed)
+        if diff is not None:
+            return (diff, next_index)
+    return (None, index)
+
+def diff_parse_lines(lines):
+    """Parse list of lines and return a valid Diff or raise exception"""
+    diff, index = get_diff_at(lines, 0, raise_if_malformed=True)
+    if not diff or index < len(lines):
+        raise ParseError(_("Not a valid diff."))
+    return diff
+
+def diff_parse_text(text):
+    """Parse text and return a valid DiffPlus or raise exception"""
+    return diff_parse_lines(text.splitlines(True))

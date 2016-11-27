@@ -25,13 +25,12 @@ import hashlib
 from . import gitbase85
 from . import diffstat
 from . import diff_preamble
+from . import diffs
 
 from .diff_preamble import Preambles
 
 from .pd_utils import TextLines as _Lines
 from .pd_utils import FilePathPlus
-
-from .diffs import Diff
 
 # TODO: convert methods that return lists to iterators
 
@@ -110,7 +109,7 @@ class DiffPlus:
                 return (DiffPlus(preambles, None), index)
             else:
                 return (None, start_index)
-        diff_data, index = Diff.get_diff_at(lines, index, raise_if_malformed)
+        diff_data, index = diffs.get_diff_at(lines, index, raise_if_malformed)
         if not diff_data:
             if preambles:
                 return (DiffPlus(preambles, None), index)
@@ -136,7 +135,7 @@ class DiffPlus:
         self.diff = diff
         self.trailing_junk = _Lines(trailing_junk)
         if DEBUG:
-            assert isinstance(self.preambles, Preambles) and (self.diff is None or isinstance(self.diff, Diff))
+            assert isinstance(self.preambles, Preambles) and (self.diff is None or isinstance(self.diff, diffs.Diff))
 
     def __str__(self):
         if self.diff is not None:
