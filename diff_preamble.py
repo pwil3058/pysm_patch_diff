@@ -16,9 +16,6 @@
 
 """Extract various diff preambles from text lines"""
 
-__all__ = []
-__author__ = "Peter Williams <pwil3058@gmail.com>"
-
 
 import collections
 import re
@@ -28,11 +25,15 @@ from .pd_utils import FilePathPlus
 from .pd_utils import file_path_fm_pair as _file_path_fm_pair
 from .pd_utils import gen_strip_level_function
 
+__all__ = []
+__author__ = "Peter Williams <pwil3058@gmail.com>"
+
 
 class _Preamble(TextLines):
     """Generic diff preamble
     """
     preamble_type_id = None
+
     def __init__(self, lines, file_data, extras=None):
         TextLines.__init__(self, lines)
         self.file_data = file_data
@@ -59,31 +60,38 @@ class _Preamble(TextLines):
         else:
             return None
 
-    def get_file_expath(self, strip_level=0):
+    @staticmethod
+    def get_file_expath(strip_level=0):
         """Extract the previous path of the file from the preamble
         """
         return None
 
 
 class GitPreamble(_Preamble):
+    """Encapsulation of "git" diff preamble used in patches
+    """
     preamble_type_id = "git"
-    DIFF_CRE = re.compile("^diff\s+--git\s+({0})\s+({1})$".format(PATH_RE_STR, PATH_RE_STR))
+    DIFF_CRE = re.compile(r"^diff\s+--git\s+({0})\s+({1})$".format(PATH_RE_STR, PATH_RE_STR))
     EXTRAS_CRES = {
-        "old mode": re.compile("^(old mode)\s+(\d*)$"),
-        "new mode": re.compile("^(new mode)\s+(\d*)$"),
-        "deleted file mode": re.compile("^(deleted file mode)\s+(\d*)$"),
-        "new file mode":  re.compile("^(new file mode)\s+(\d*)$"),
-        "copy from": re.compile("^(copy from)\s+({0})$".format(PATH_RE_STR)),
-        "copy to": re.compile("^(copy to)\s+({0})$".format(PATH_RE_STR)),
-        "rename from": re.compile("^(rename from)\s+({0})$".format(PATH_RE_STR)),
-        "rename to": re.compile("^(rename to)\s+({0})$".format(PATH_RE_STR)),
-        "similarity index": re.compile("^(similarity index)\s+((\d*)%)$"),
-        "dissimilarity index": re.compile("^(dissimilarity index)\s+((\d*)%)$"),
-        "index": re.compile("^(index)\s+(([a-fA-F0-9]+)..([a-fA-F0-9]+)( (\d*))?)$"),
+        "old mode": re.compile(r"^(old mode)\s+(\d*)$"),
+        "new mode": re.compile(r"^(new mode)\s+(\d*)$"),
+        "deleted file mode": re.compile(r"^(deleted file mode)\s+(\d*)$"),
+        "new file mode":  re.compile(r"^(new file mode)\s+(\d*)$"),
+        "copy from": re.compile(r"^(copy from)\s+({0})$".format(PATH_RE_STR)),
+        "copy to": re.compile(r"^(copy to)\s+({0})$".format(PATH_RE_STR)),
+        "rename from": re.compile(r"^(rename from)\s+({0})$".format(PATH_RE_STR)),
+        "rename to": re.compile(r"^(rename to)\s+({0})$".format(PATH_RE_STR)),
+        "similarity index": re.compile(r"^(similarity index)\s+((\d*)%)$"),
+        "dissimilarity index": re.compile(r"^(dissimilarity index)\s+((\d*)%)$"),
+        "index": re.compile(r"^(index)\s+(([a-fA-F0-9]+)..([a-fA-F0-9]+)( (\d*))?)$"),
     }
 
     @classmethod
     def get_preamble_at(cls, lines, index, raise_if_malformed):
+        """Parse "lines" starting at "index" for a "git" style preamble.
+        Return a GitPreamble and the index of the first line after the
+        preamble if found else return None and the index unchanged.
+        """
         match = cls.DIFF_CRE.match(lines[index])
         if not match:
             return (None, index)
@@ -108,16 +116,22 @@ class GitPreamble(_Preamble):
         _Preamble.__init__(self, lines=lines, file_data=file_data, extras=extras)
 
     def get_file_path(self, strip_level=0):
+        """Extract the file path from this preamble
+        """
         strip = gen_strip_level_function(strip_level)
         return _file_path_fm_pair(self.file_data, strip)
 
     def get_file_path_plus(self, strip_level=0):
+        """Extract the file path plus status data from this preamble
+        """
         path_plus = _Preamble.get_file_path_plus(self, strip_level=strip_level)
         if path_plus and path_plus.status == FilePathPlus.ADDED:
             path_plus.expath = self.get_file_expath(strip_level=strip_level)
         return path_plus
 
     def get_file_expath(self, strip_level=0):
+        """Get the path of the file that this file is a rename or copy of
+        """
         for key in ["copy from", "rename from"]:
             if key in self.extras:
                 strip = gen_strip_level_function(strip_level)
@@ -125,8 +139,10 @@ class GitPreamble(_Preamble):
         return None
 
     def is_compatible_with(self, git_hash):
+        """Is the "before" git hash in the preamble compatible with "git_hash"?
+        """
         try:
-            before_hash, _dummy = self.extras["index"].split("..")
+            before_hash = self.extras["index"].split("..")[0]
             if len(before_hash) > len(git_hash):
                 return before_hash.startswith(git_hash)
             else:
@@ -136,11 +152,17 @@ class GitPreamble(_Preamble):
 
 
 class DiffPreamble(_Preamble):
+    """Encapsulate the simple "diff" style diff preamble
+    """
     preamble_type_id = "diff"
-    CRE = re.compile("^diff(\s.+)\s+({0})\s+({1})$".format(PATH_RE_STR, PATH_RE_STR))
+    CRE = re.compile(r"^diff(\s.+)\s+({0})\s+({1})$".format(PATH_RE_STR, PATH_RE_STR))
 
     @classmethod
     def get_preamble_at(cls, lines, index, raise_if_malformed):
+        """Parse "lines" starting at "index" for a "diff" style preamble.
+        Return a DiffPreamble and the index of the first line after the
+        preamble if found else return None and the index unchanged.
+        """
         match = cls.CRE.match(lines[index])
         if not match or (match.group(1) and match.group(1).find("--git") != -1):
             return (None, index)
@@ -153,17 +175,25 @@ class DiffPreamble(_Preamble):
         _Preamble.__init__(self, lines=lines, file_data=file_data, extras=extras)
 
     def get_file_path(self, strip_level=0):
+        """Extract the file path from this preamble
+        """
         strip = gen_strip_level_function(strip_level)
         return _file_path_fm_pair(self.file_data, strip)
 
 
 class IndexPreamble(_Preamble):
+    """Encapsulate the simple "Index" style diff preamble
+    """
     preamble_type_id = "index"
-    FILE_RCE = re.compile("^Index:\s+({0})(.*)$".format(PATH_RE_STR))
-    SEP_RCE = re.compile("^==*$")
+    FILE_RCE = re.compile(r"^Index:\s+({0})(.*)$".format(PATH_RE_STR))
+    SEP_RCE = re.compile(r"^==*$")
 
     @classmethod
     def get_preamble_at(cls, lines, index, raise_if_malformed):
+        """Parse "lines" starting at "index" for an "Index" style preamble.
+        Return a IndexPreamble and the index of the first line after the
+        preamble if found else return None and the index unchanged.
+        """
         match = cls.FILE_RCE.match(lines[index])
         if not match:
             return (None, index)
@@ -175,11 +205,18 @@ class IndexPreamble(_Preamble):
         _Preamble.__init__(self, lines=lines, file_data=file_data, extras=extras)
 
     def get_file_path(self, strip_level=0):
+        """Extract the file path from this preamble
+        """
         strip = gen_strip_level_function(strip_level)
         return strip(self.file_data)
 
 
 class Preambles(collections.OrderedDict):
+    """Maintain an ordered list of the preambles preceding a diff.
+    This caters for the case where patch generators get overexcited
+    and include more than one preamble type for a file's diff within a
+    patch (used to be common but now rare)
+    """
     path_precedence = ["index", "git", "diff"]
     expath_precedence = ["git", "index", "diff"]
 
@@ -187,16 +224,23 @@ class Preambles(collections.OrderedDict):
         return "".join(self.iter_lines())
 
     def iter_lines(self):
+        """Iterate over the lines in all preambles in the order in which
+        they were encountered.
+        """
         return (line for preamble in self.values() for line in preamble)
 
     @classmethod
     def fm_list(cls, list_arg):
+        """Create a Preambles instance from a list of preambles
+        """
         preambles = cls()
-        for pramble in list_arg:
+        for preamble in list_arg:
             preambles[preamble.preamble_type_id] = preamble
         return preambles
 
     def get_file_path(self, strip_level=0):
+        """Extract the file path from the preambles
+        """
         for preamble_type_id in self.path_precedence:
             preamble = self.get(preamble_type_id)
             if preamble:
@@ -206,6 +250,8 @@ class Preambles(collections.OrderedDict):
         return None
 
     def get_file_path_plus(self, strip_level=0):
+        """Extract the file path and status from the preambles
+        """
         for preamble_type_id in self.path_precedence:
             preamble = self.get(preamble_type_id)
             if preamble:
@@ -215,18 +261,23 @@ class Preambles(collections.OrderedDict):
         return None
 
     def get_file_expath(self, strip_level=0):
+        """Get the path of the file that this file is a rename or copy of
+        """
         for preamble_type_id in self.expath_precedence:
             preamble = self.get(preamble_type_id)
             if preamble:
                 expath = preamble.get_file_expath(strip_level=strip_level)
-                if path:
+                if expath:
                     return expath
         return None
 
 DIFF_PREAMBLE_TYPES = [GitPreamble, DiffPreamble, IndexPreamble]
 DIFF_PREAMBLE_TYPE_IDS = [dpt.preamble_type_id for dpt in DIFF_PREAMBLE_TYPES]
 
+
 def get_preamble_at(lines, index, raise_if_malformed, exclude_subtypes_in=None):
+    """Parse "lines" starting at "index" looking for a preamble
+    """
     for subtype in DIFF_PREAMBLE_TYPES:
         if exclude_subtypes_in and subtype in exclude_subtypes_in:
             continue
@@ -235,7 +286,10 @@ def get_preamble_at(lines, index, raise_if_malformed, exclude_subtypes_in=None):
             return (preamble, next_index)
     return (None, index)
 
+
 def get_preambles_at(lines, index, raise_if_malformed):
+    """Parse "lines" starting at "index" looking for a preambles
+    """
     preambles = Preambles()
     # make sure we don't get more than one preamble of the same type
     already_seen = set()
