@@ -22,13 +22,7 @@ import re
 
 from . import diffstat
 from . import gitbase85
-
-from .pd_utils import TextLines as _Lines
-from .pd_utils import PATH_RE_STR as _PATH_RE_STR
-from .pd_utils import BEFORE_AFTER
-from .pd_utils import gen_strip_level_function
-from .pd_utils import file_path_fm_pair as _file_path_fm_pair
-from .pd_utils import FilePathPlus
+from . import pd_utils
 
 
 __all__ = []
@@ -106,10 +100,10 @@ class Diff:
                 raise ParseError(_("Expected unified diff hunks not found."), index)
             else:
                 return (None, start_index)
-        return (cls(lines[start_index:start_index + 2], BEFORE_AFTER(before_file_data, after_file_data), hunks), index)
+        return (cls(lines[start_index:start_index + 2], pd_utils.BEFORE_AFTER(before_file_data, after_file_data), hunks), index)
 
     def __init__(self, diff_type, lines, file_data, hunks):
-        self.header = _Lines(lines)
+        self.header = pd_utils.TextLines(lines)
         self.diff_type = diff_type
         self.file_data = file_data
         self.hunks = list() if hunks is None else hunks
@@ -143,32 +137,32 @@ class Diff:
         return stats
 
     def get_file_path(self, strip_level=0):
-        strip = gen_strip_level_function(strip_level)
+        strip = pd_utils.gen_strip_level_function(strip_level)
         if isinstance(self.file_data, str):
             return strip(self.file_data)
-        elif isinstance(self.file_data, BEFORE_AFTER):
-            return _file_path_fm_pair(self.file_data, strip)
+        elif isinstance(self.file_data, pd_utils.BEFORE_AFTER):
+            return pd_utils.file_path_fm_pair(self.file_data, strip)
         else:
             return None
 
     def get_file_path_plus(self, strip_level=0):
-        strip = gen_strip_level_function(strip_level)
+        strip = pd_utils.gen_strip_level_function(strip_level)
         if isinstance(self.file_data, str):
-            return FilePathPlus(path=strip(self.file_data), status=None, expath=None)
-        elif isinstance(self.file_data, BEFORE_AFTER):
-            return FilePathPlus.fm_pair(self.file_data, strip)
+            return pd_utils.FilePathPlus(path=strip(self.file_data), status=None, expath=None)
+        elif isinstance(self.file_data, pd_utils.BEFORE_AFTER):
+            return pd_utils.FilePathPlus.fm_pair(self.file_data, strip)
         else:
             return None
 
     def get_outcome(self):
-        if isinstance(self.file_data, BEFORE_AFTER):
+        if isinstance(self.file_data, pd_utils.BEFORE_AFTER):
             return _file_outcome_fm_pair(self.file_data)
         return None
 
 
-class UnifiedDiffHunk(_Lines):
+class UnifiedDiffHunk(pd_utils.TextLines):
     def __init__(self, lines, before, after):
-        _Lines.__init__(self, lines)
+        pd_utils.TextLines.__init__(self, lines)
         self.before = before
         self.after = after
 
@@ -208,8 +202,8 @@ class UnifiedDiffHunk(_Lines):
 
 
 class UnifiedDiff(Diff):
-    BEFORE_FILE_CRE = re.compile("^--- ({0})(\s+{1})?(.*)$".format(_PATH_RE_STR, _EITHER_TS_RE_STR))
-    AFTER_FILE_CRE = re.compile("^\+\+\+ ({0})(\s+{1})?(.*)$".format(_PATH_RE_STR, _EITHER_TS_RE_STR))
+    BEFORE_FILE_CRE = re.compile("^--- ({0})(\s+{1})?(.*)$".format(pd_utils.PATH_RE_STR, _EITHER_TS_RE_STR))
+    AFTER_FILE_CRE = re.compile("^\+\+\+ ({0})(\s+{1})?(.*)$".format(pd_utils.PATH_RE_STR, _EITHER_TS_RE_STR))
     HUNK_DATA_CRE = re.compile("^@@\s+-(\d+)(,(\d+))?\s+\+(\d+)(,(\d+))?\s+@@\s*(.*)$")
 
     @staticmethod
@@ -254,9 +248,9 @@ class UnifiedDiff(Diff):
         Diff.__init__(self, "unified", lines, file_data, hunks)
 
 
-class ContextDiffHunk(_Lines):
+class ContextDiffHunk(pd_utils.TextLines):
     def __init__(self, lines, before, after):
-        _Lines.__init__(self, lines)
+        pd_utils.TextLines.__init__(self, lines)
         self.before = before
         self.after = after
 
@@ -300,8 +294,8 @@ class ContextDiffHunk(_Lines):
 
 
 class ContextDiff(Diff):
-    BEFORE_FILE_CRE = re.compile("^\*\*\* ({0})(\s+{1})?$".format(_PATH_RE_STR, _EITHER_TS_RE_STR))
-    AFTER_FILE_CRE = re.compile("^--- ({0})(\s+{1})?$".format(_PATH_RE_STR, _EITHER_TS_RE_STR))
+    BEFORE_FILE_CRE = re.compile("^\*\*\* ({0})(\s+{1})?$".format(pd_utils.PATH_RE_STR, _EITHER_TS_RE_STR))
+    AFTER_FILE_CRE = re.compile("^--- ({0})(\s+{1})?$".format(pd_utils.PATH_RE_STR, _EITHER_TS_RE_STR))
     HUNK_START_CRE = re.compile("^\*{15}\s*(.*)$")
     HUNK_BEFORE_CRE = re.compile("^\*\*\*\s+(\d+)(,(\d+))?\s+\*\*\*\*\s*(.*)$")
     HUNK_AFTER_CRE = re.compile("^---\s+(\d+)(,(\d+))?\s+----(.*)$")
@@ -391,11 +385,11 @@ class ContextDiff(Diff):
         Diff.__init__(self, "context", lines, file_data, hunks)
 
 
-class GitBinaryDiffData(_Lines):
+class GitBinaryDiffData(pd_utils.TextLines):
     LITERAL, DELTA = ("literal", "delta")
 
     def __init__(self, lines, method, size_raw, data_zipped):
-        _Lines.__init__(self, lines)
+        pd_utils.TextLines.__init__(self, lines)
         self.method = method
         self.size_raw = size_raw
         self.data_zipped = data_zipped
