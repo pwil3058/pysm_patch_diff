@@ -179,27 +179,22 @@ class IndexPreamble(_Preamble):
         return strip(self.file_data)
 
 
-class Preambles(list):
+class Preambles(collections.OrderedDict):
     path_precedence = ["index", "git", "diff"]
     expath_precedence = ["git", "index", "diff"]
 
     def __str__(self):
-        return "".join([str(preamble) for preamble in self])
+        return "".join(self.iter_lines())
 
-    def __contains__(self, preamble_type_id):
-        for preamble in self:
-            if preamble.preamble_type_id == preamble_type_id:
-                return True
-        return False
+    def iter_lines(self):
+        return (line for preamble in self.values() for line in preamble)
 
-    def get(self, preamble_type_id, default=None):
-        for preamble in self:
-            if preamble.preamble_type_id == preamble_type_id:
-                return preamble
-        return default
-
-    def get_types(self):
-        return [item.preamble_type_id for item in self]
+    @classmethod
+    def fm_list(cls, list_arg):
+        preambles = cls()
+        for pramble in list_arg:
+            preambles[preamble.preamble_type_id] = preamble
+        return preambles
 
     def get_file_path(self, strip_level=0):
         for preamble_type_id in self.path_precedence:
@@ -248,7 +243,7 @@ def get_preambles_at(lines, index, raise_if_malformed):
         preamble, index = get_preamble_at(lines, index, raise_if_malformed, exclude_subtypes_in=already_seen)
         if preamble:
             already_seen.add(type(preamble))
-            preambles.append(preamble)
+            preambles[preamble.preamble_type_id] = preamble
         else:
             break
     return (preambles, index)

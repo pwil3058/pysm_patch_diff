@@ -607,7 +607,7 @@ class DiffPlus:
         return DiffPlus.parse_lines(text.splitlines(True))
 
     def __init__(self, preambles=None, diff=None, trailing_junk=None):
-        self.preambles = preambles if isinstance(preambles, Preambles) else Preambles(preambles)
+        self.preambles = preambles if isinstance(preambles, Preambles) else Preambles.fm_list(preambles)
         self.diff = diff
         self.trailing_junk = _Lines(trailing_junk)
         if DEBUG:
@@ -620,9 +620,8 @@ class DiffPlus:
             return str(self.preambles) + str(self.trailing_junk)
 
     def iter_lines(self):
-        for preamble in self.preambles:
-            for line in preamble:
-                yield line
+        for line in self.preambles.iter_lines():
+            yield line
         if self.diff:
             for line in self.diff.iter_lines():
                 yield line
