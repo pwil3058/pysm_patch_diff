@@ -24,10 +24,17 @@ import collections
 import os
 
 # Useful snippet for inclusion in regular expression
-PATH_RE_STR = """"([^"]+)"|(\S+)"""
+PATH_RE_STR = r""""([^"]+)"|(\S+)"""
 
 
 BEFORE_AFTER = collections.namedtuple("BEFORE_AFTER", ["before", "after"])
+
+
+class TooManyStripLevels(Exception):
+    def __init__(self, message, path, levels):
+        self.message = message
+        self.path = path
+        self.levels = levels
 
 
 def is_non_null(path):
@@ -69,7 +76,7 @@ def file_data_consistent_with_strip_one(pair):
         return None
     try:
         return strip(before) == strip(after)
-    except TooMayStripLevels:
+    except TooManyStripLevels:
         return False
 
 
@@ -141,7 +148,7 @@ def gen_strip_level_function(level):
         try:
             return path.split(os.sep, level)[level]
         except IndexError:
-            raise TooMayStripLevels(_("Strip level too large"), path, level)
+            raise TooManyStripLevels(_("Strip level too large"), path, level)
     level = int(level)
     if level == 0:
         return lambda path: path
