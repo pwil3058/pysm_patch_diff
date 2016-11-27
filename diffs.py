@@ -63,26 +63,9 @@ _ALT_TIMESTAMP_RE_STR = "[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{2}:\d{2}:\d{2} \d{
 _EITHER_TS_RE_STR = "(%s|%s)" % (_TIMESTAMP_RE_STR, _ALT_TIMESTAMP_RE_STR)
 
 
-
 def _trim_trailing_ws(line):
     """Return the given line with any trailing white space removed"""
     return re.sub("[ \t]+$", "", line)
-
-
-class DiffHunk(_Lines):
-    def __init__(self, lines, before, after):
-        _Lines.__init__(self, lines)
-        self.before = before
-        self.after = after
-
-    def get_diffstat_stats(self):
-        return diffstat.DiffStats()
-
-    def fix_trailing_whitespace(self):
-        return list()
-
-    def report_trailing_whitespace(self):
-        return list()
 
 
 class Diff:
@@ -203,9 +186,11 @@ class Diff:
         return None
 
 
-class UnifiedDiffHunk(DiffHunk):
+class UnifiedDiffHunk(_Lines):
     def __init__(self, lines, before, after):
-        DiffHunk.__init__(self, lines, before, after)
+        _Lines.__init__(self, lines)
+        self.before = before
+        self.after = after
 
     def _process_tws(self, fix=False):
         bad_lines = list()
@@ -295,9 +280,11 @@ class UnifiedDiff(Diff):
 Diff.subtypes.append(UnifiedDiff)
 
 
-class ContextDiffHunk(DiffHunk):
+class ContextDiffHunk(_Lines):
     def __init__(self, lines, before, after):
-        DiffHunk.__init__(self, lines, before, after)
+        _Lines.__init__(self, lines)
+        self.before = before
+        self.after = after
 
     def _process_tws(self, fix=False):
         bad_lines = list()
