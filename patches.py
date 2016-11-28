@@ -27,9 +27,7 @@ from . import diffstat
 from . import diff_preamble
 from . import diffs
 
-from .diff_preamble import Preambles
-
-from .pd_utils import TextLines as _Lines
+from .pd_utils import TextLines
 from .pd_utils import FilePathPlus
 
 # TODO: convert methods that return lists to iterators
@@ -50,7 +48,7 @@ class Header:
             if not line.startswith("#"):
                 break
             descr_starts_at += 1
-        self.comment_lines = _Lines(lines[:descr_starts_at])
+        self.comment_lines = TextLines(lines[:descr_starts_at])
         diffstat_starts_at = None
         index = descr_starts_at
         while index < len(lines):
@@ -59,11 +57,11 @@ class Header:
                 break
             index += 1
         if diffstat_starts_at is not None:
-            self.description_lines = _Lines(lines[descr_starts_at:diffstat_starts_at])
-            self.diffstat_lines = _Lines(lines[diffstat_starts_at:])
+            self.description_lines = TextLines(lines[descr_starts_at:diffstat_starts_at])
+            self.diffstat_lines = TextLines(lines[diffstat_starts_at:])
         else:
-            self.description_lines = _Lines(lines[descr_starts_at:])
-            self.diffstat_lines = _Lines()
+            self.description_lines = TextLines(lines[descr_starts_at:])
+            self.diffstat_lines = TextLines()
 
     def __str__(self):
         return self.get_comments() + self.get_description() + self.get_diffstat()
@@ -85,17 +83,17 @@ class Header:
     def set_comments(self, text):
         if text and not text.endswith("\n"):
             text += "\n"
-        self.comment_lines = _Lines(text)
+        self.comment_lines = TextLines(text)
 
     def set_description(self, text):
         if text and not text.endswith("\n"):
             text += "\n"
-        self.description_lines = _Lines(text)
+        self.description_lines = TextLines(text)
 
     def set_diffstat(self, text):
         if text and not text.endswith("\n"):
             text += "\n"
-        self.diffstat_lines = _Lines(text)
+        self.diffstat_lines = TextLines(text)
 
 
 class DiffPlus:
@@ -131,11 +129,11 @@ class DiffPlus:
         return DiffPlus.parse_lines(text.splitlines(True))
 
     def __init__(self, preambles=None, diff=None, trailing_junk=None):
-        self.preambles = preambles if isinstance(preambles, Preambles) else Preambles.fm_list(preambles)
+        self.preambles = preambles if isinstance(preambles, diff_preamble.Preambles) else diff_preamble.Preambles.fm_list(preambles)
         self.diff = diff
-        self.trailing_junk = _Lines(trailing_junk)
+        self.trailing_junk = TextLines(trailing_junk)
         if DEBUG:
-            assert isinstance(self.preambles, Preambles) and (self.diff is None or isinstance(self.diff, diffs.Diff))
+            assert isinstance(self.preambles, diff_preamble.Preambles) and (self.diff is None or isinstance(self.diff, diffs.Diff))
 
     def __str__(self):
         if self.diff is not None:
