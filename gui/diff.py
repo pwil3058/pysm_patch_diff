@@ -25,7 +25,7 @@ from ...bab import CmdResult, CmdFailure
 from ...bab import runext
 from ...bab import options
 
-from .. import patchlib
+from .. import patches
 
 from ...gtx import dialogue
 from ...gtx import gutils
@@ -434,7 +434,7 @@ class DiffTextsWidget(DiffPlusNotebook, FileAndRefreshActions):
     def __init__(self, num_strip_levels=1, **kwargs):
         diff_text = self._get_diff_text()
         digest = hashlib.sha1(diff_text.encode()).digest()
-        diff_pluses = patchlib.Patch.parse_text(diff_text).diff_pluses
+        diff_pluses = patches.Patch.parse_text(diff_text).diff_pluses
         DiffPlusNotebook.__init__(self, diff_pluses=diff_pluses, digest=digest, num_strip_levels=num_strip_levels)
         FileAndRefreshActions.__init__(self)
         self.diff_buttons = gutils.ActionButtonList([self._action_group], self.A_NAME_LIST)
@@ -446,7 +446,7 @@ class DiffTextsWidget(DiffPlusNotebook, FileAndRefreshActions):
         diff_text = self._get_diff_text()
         digest = hashlib.sha1(diff_text.encode()).digest()
         if digest != self.digest:
-            self.diff_pluses = patchlib.Patch.parse_text(diff_text).diff_pluses
+            self.diff_pluses = patches.Patch.parse_text(diff_text).diff_pluses
             self.digest = digest
             self._update_pages()
     def _get_text_to_save(self):
