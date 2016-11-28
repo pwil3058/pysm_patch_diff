@@ -301,3 +301,10 @@ def get_preambles_at(lines, index, raise_if_malformed):
         else:
             break
     return (preambles, index)
+
+def preamble_parse_lines(lines):
+    """Parse "lines" and return the preamble contained therein
+    """
+    preamble, index = get_preamble_at(lines, 0, raise_if_malformed=True)
+    assert index == len(lines), "{}:{}:{}".format(preamble, index, lines)
+    return preamble
