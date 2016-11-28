@@ -19,6 +19,7 @@
 
 import collections
 import re
+import zlib
 
 from . import diffstat
 from . import gitbase85
@@ -33,16 +34,23 @@ DEBUG = False
 
 
 class ParseError(Exception):
+    """Exception to signal parsing error
+    """
     def __init__(self, message, lineno=None):
+        Exception.__init__(self)
         self.message = message
         self.lineno = lineno
 
 
 class DataError(ParseError):
+    """Exception to signal git binary patch data error
+    """
     pass
 
 
 class Bug(Exception):
+    """Exception to signal a bug
+    """
     pass
 
 
@@ -52,17 +60,21 @@ _HUNK = collections.namedtuple("_HUNK", ["offset", "start", "length", "numlines"
 _FILE_AND_TS = collections.namedtuple("_FILE_AND_TS", ["path", "timestamp"])
 
 # Useful strings for including in regular expressions
-_TIMESTAMP_RE_STR = "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{9})? [-+]{1}\d{4}"
-_ALT_TIMESTAMP_RE_STR = "[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{2}:\d{2}:\d{2} \d{4} [-+]{1}\d{4}"
+_TIMESTAMP_RE_STR = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{9})? [-+]{1}\d{4}"
+_ALT_TIMESTAMP_RE_STR = r"[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{2}:\d{2}:\d{2} \d{4} [-+]{1}\d{4}"
 _EITHER_TS_RE_STR = "(%s|%s)" % (_TIMESTAMP_RE_STR, _ALT_TIMESTAMP_RE_STR)
 
 
 def _trim_trailing_ws(line):
-    """Return the given line with any trailing white space removed"""
-    return re.sub("[ \t]+$", "", line)
+    """Return the given line with any trailing white space removed
+    """
+    return re.sub(r"[ \t]+$", "", line)
 
 
 class Diff:
+    """A base class for all classes that encapsulate diffs.
+    """
+    diff_type = None
     @staticmethod
     def _get_file_data_at(cre, lines, index):
         match = cre.match(lines[index])
@@ -70,6 +82,27 @@ class Diff:
             return (None, index)
         filepath = match.group(2) if match.group(2) else match.group(3)
         return (_FILE_AND_TS(filepath, match.group(4)), index + 1)
+
+    @staticmethod
+    def get_before_file_data_at(lines, index):
+        """Get data for the "before" file the diff applies to
+        """
+        print(lines[index:])
+        return (NotImplemented, index)
+
+    @staticmethod
+    def get_after_file_data_at(lines, index):
+        """Get data for the "after" file the diff applies to
+        """
+        print(lines[index:])
+        return (NotImplemented, index)
+
+    @staticmethod
+    def get_hunk_at(lines, index):
+        """Extract a diff hunk from lines starting at "index"
+        """
+        print(lines[index:])
+        return (NotImplemented, index)
 
     @classmethod
     def get_diff_at(cls, lines, start_index, raise_if_malformed=False):
@@ -100,11 +133,11 @@ class Diff:
                 raise ParseError(_("Expected unified diff hunks not found."), index)
             else:
                 return (None, start_index)
-        return (cls(lines[start_index:start_index + 2], pd_utils.BEFORE_AFTER(before_file_data, after_file_data), hunks), index)
+        file_data = pd_utils.BEFORE_AFTER(before_file_data, after_file_data)
+        return (cls(lines[start_index:start_index + 2], file_data, hunks), index)
 
-    def __init__(self, diff_type, lines, file_data, hunks):
+    def __init__(self, lines, file_data, hunks):
         self.header = pd_utils.TextLines(lines)
-        self.diff_type = diff_type
         self.file_data = file_data
         self.hunks = list() if hunks is None else hunks
 
@@ -112,6 +145,8 @@ class Diff:
         return str(self.header) + "".join([str(hunk) for hunk in self.hunks])
 
     def iter_lines(self):
+        """Iterate over the lines in this diff
+        """
         for line in self.header:
             yield line
         for hunk in self.hunks:
@@ -119,24 +154,34 @@ class Diff:
                 yield line
 
     def fix_trailing_whitespace(self):
+        """Fix any lines that would introduce trailing white space when
+        the diff is applied and return a list of the changed lines
+        """
         bad_lines = list()
         for hunk in self.hunks:
             bad_lines += hunk.fix_trailing_whitespace()
         return bad_lines
 
     def report_trailing_whitespace(self):
+        """Return a list of lines that will introduce tailing white
+        space when the diff is applied
+        """
         bad_lines = list()
         for hunk in self.hunks:
             bad_lines += hunk.report_trailing_whitespace()
         return bad_lines
 
     def get_diffstat_stats(self):
+        """Return the "diffstat" statistics for this diff
+        """
         stats = diffstat.DiffStats()
         for hunk in self.hunks:
             stats += hunk.get_diffstat_stats()
         return stats
 
     def get_file_path(self, strip_level=0):
+        """Get the file path that this diff applies to
+        """
         strip = pd_utils.gen_strip_level_function(strip_level)
         if isinstance(self.file_data, str):
             return strip(self.file_data)
@@ -146,6 +191,9 @@ class Diff:
             return None
 
     def get_file_path_plus(self, strip_level=0):
+        """Get the file path that this diff applies to along with any
+        extra relevant data
+        """
         strip = pd_utils.gen_strip_level_function(strip_level)
         if isinstance(self.file_data, str):
             return pd_utils.FilePathPlus(path=strip(self.file_data), status=None, expath=None)
@@ -155,18 +203,27 @@ class Diff:
             return None
 
     def get_outcome(self):
+        """Get the "outcome" of applying this diff
+        """
         if isinstance(self.file_data, pd_utils.BEFORE_AFTER):
-            return _file_outcome_fm_pair(self.file_data)
+            return pd_utils.file_outcome_fm_pair(self.file_data)
         return None
 
 
 class UnifiedDiffHunk(pd_utils.TextLines):
+    """Class to encapsulate a single unified diff hunk
+    """
     def __init__(self, lines, before, after):
         pd_utils.TextLines.__init__(self, lines)
         self.before = before
         self.after = after
 
     def _process_tws(self, fix=False):
+        """If "fix" is True remove any trailing white space from
+        changed lines and return a list of lines that were fixed
+        otherwise return a list of changed lines that have tailing
+        white space
+        """
         bad_lines = list()
         after_count = 0
         for index in range(len(self.lines)):
@@ -184,6 +241,8 @@ class UnifiedDiffHunk(pd_utils.TextLines):
         return bad_lines
 
     def get_diffstat_stats(self):
+        """Return the "diffstat" statistics for this chunk
+        """
         stats = diffstat.DiffStats()
         for index in range(len(self.lines)):
             if self.lines[index].startswith("-"):
@@ -195,16 +254,25 @@ class UnifiedDiffHunk(pd_utils.TextLines):
         return stats
 
     def fix_trailing_whitespace(self):
+        """Fix any lines that would introduce trailing white space when
+        the chunk is applied and return a list of the changed lines
+        """
         return self._process_tws(fix=True)
 
     def report_trailing_whitespace(self):
+        """Return a list of lines that will introduce tailing white
+        space when the chunk is applied
+        """
         return self._process_tws(fix=False)
 
 
 class UnifiedDiff(Diff):
-    BEFORE_FILE_CRE = re.compile("^--- ({0})(\s+{1})?(.*)$".format(pd_utils.PATH_RE_STR, _EITHER_TS_RE_STR))
-    AFTER_FILE_CRE = re.compile("^\+\+\+ ({0})(\s+{1})?(.*)$".format(pd_utils.PATH_RE_STR, _EITHER_TS_RE_STR))
-    HUNK_DATA_CRE = re.compile("^@@\s+-(\d+)(,(\d+))?\s+\+(\d+)(,(\d+))?\s+@@\s*(.*)$")
+    """Class to encapsulate a unified diff
+    """
+    diff_type = "unified"
+    BEFORE_FILE_CRE = re.compile(r"^--- ({0})(\s+{1})?(.*)$".format(pd_utils.PATH_RE_STR, _EITHER_TS_RE_STR))
+    AFTER_FILE_CRE = re.compile(r"^\+\+\+ ({0})(\s+{1})?(.*)$".format(pd_utils.PATH_RE_STR, _EITHER_TS_RE_STR))
+    HUNK_DATA_CRE = re.compile(r"^@@\s+-(\d+)(,(\d+))?\s+\+(\d+)(,(\d+))?\s+@@\s*(.*)$")
 
     @staticmethod
     def get_before_file_data_at(lines, index):
@@ -245,16 +313,23 @@ class UnifiedDiff(Diff):
         return (UnifiedDiffHunk(lines[start_index:index], before_chunk, after_chunk), index)
 
     def __init__(self, lines, file_data, hunks):
-        Diff.__init__(self, "unified", lines, file_data, hunks)
+        Diff.__init__(self, lines, file_data, hunks)
 
 
 class ContextDiffHunk(pd_utils.TextLines):
+    """Class to encapsulate a single context diff hunk
+    """
     def __init__(self, lines, before, after):
         pd_utils.TextLines.__init__(self, lines)
         self.before = before
         self.after = after
 
     def _process_tws(self, fix=False):
+        """If "fix" is True remove any trailing white space from
+        changed lines and return a list of lines that were fixed
+        otherwise return a list of changed lines that have tailing
+        white space
+        """
         bad_lines = list()
         for index in range(self.after.offset + 1, self.after.offset + self.after.numlines):
             if self.lines[index].startswith("+ ") or self.lines[index].startswith("! "):
@@ -269,6 +344,8 @@ class ContextDiffHunk(pd_utils.TextLines):
         return bad_lines
 
     def get_diffstat_stats(self):
+        """Return the "diffstat" statistics for this chunk
+        """
         stats = diffstat.DiffStats()
         for index in range(self.before.offset + 1, self.before.offset + self.before.numlines):
             if self.lines[index].startswith("- "):
@@ -287,18 +364,27 @@ class ContextDiffHunk(pd_utils.TextLines):
         return stats
 
     def fix_trailing_whitespace(self):
+        """Fix any lines that would introduce trailing white space when
+        the chunk is applied and return a list of the changed lines
+        """
         return self._process_tws(fix=True)
 
     def report_trailing_whitespace(self):
+        """Return a list of lines that will introduce tailing white
+        space when the chunk is applied
+        """
         return self._process_tws(fix=False)
 
 
 class ContextDiff(Diff):
-    BEFORE_FILE_CRE = re.compile("^\*\*\* ({0})(\s+{1})?$".format(pd_utils.PATH_RE_STR, _EITHER_TS_RE_STR))
-    AFTER_FILE_CRE = re.compile("^--- ({0})(\s+{1})?$".format(pd_utils.PATH_RE_STR, _EITHER_TS_RE_STR))
-    HUNK_START_CRE = re.compile("^\*{15}\s*(.*)$")
-    HUNK_BEFORE_CRE = re.compile("^\*\*\*\s+(\d+)(,(\d+))?\s+\*\*\*\*\s*(.*)$")
-    HUNK_AFTER_CRE = re.compile("^---\s+(\d+)(,(\d+))?\s+----(.*)$")
+    """Class to encapsulate a context diff
+    """
+    diff_type = "context"
+    BEFORE_FILE_CRE = re.compile(r"^\*\*\* ({0})(\s+{1})?$".format(pd_utils.PATH_RE_STR, _EITHER_TS_RE_STR))
+    AFTER_FILE_CRE = re.compile(r"^--- ({0})(\s+{1})?$".format(pd_utils.PATH_RE_STR, _EITHER_TS_RE_STR))
+    HUNK_START_CRE = re.compile(r"^\*{15}\s*(.*)$")
+    HUNK_BEFORE_CRE = re.compile(r"^\*\*\*\s+(\d+)(,(\d+))?\s+\*\*\*\*\s*(.*)$")
+    HUNK_AFTER_CRE = re.compile(r"^---\s+(\d+)(,(\d+))?\s+----(.*)$")
 
     @staticmethod
     def get_before_file_data_at(lines, index):
@@ -320,6 +406,8 @@ class ContextDiff(Diff):
 
     @staticmethod
     def _get_before_chunk_at(lines, index):
+        """Extract the context diff "before" chunk from "lines" starting
+        at "index"."""
         match = ContextDiff.HUNK_BEFORE_CRE.match(lines[index])
         if not match:
             return (None, index)
@@ -327,6 +415,8 @@ class ContextDiff(Diff):
 
     @staticmethod
     def _get_after_chunk_at(lines, index):
+        """Extract the context diff "after" chunk from "lines" starting
+        at "index"."""
         match = ContextDiff.HUNK_AFTER_CRE.match(lines[index])
         if not match:
             return (None, index)
@@ -352,7 +442,7 @@ class ContextDiff(Diff):
                 before_count += 1
                 index += 1
             if after_chunk is None:
-                if lines[index].startswith("\ "):
+                if lines[index].startswith(r"\ "):
                     before_count += 1
                     index += 1
                 after_start_index = index
@@ -366,7 +456,7 @@ class ContextDiff(Diff):
                     raise ParseError(_("Unexpected end of context diff hunk."), index)
                 after_count += 1
                 index += 1
-            if index < len(lines) and lines[index].startswith("\ "):
+            if index < len(lines) and lines[index].startswith(r"\ "):
                 after_count += 1
                 index += 1
         except IndexError:
@@ -382,10 +472,12 @@ class ContextDiff(Diff):
         return (ContextDiffHunk(lines[start_index:index], before_hunk, after_hunk), index)
 
     def __init__(self, lines, file_data, hunks):
-        Diff.__init__(self, "context", lines, file_data, hunks)
+        Diff.__init__(self, lines, file_data, hunks)
 
 
 class GitBinaryDiffData(pd_utils.TextLines):
+    """Class to encapsulate the data component of a git binary patch
+    """
     LITERAL, DELTA = ("literal", "delta")
 
     def __init__(self, lines, method, size_raw, data_zipped):
@@ -396,21 +488,32 @@ class GitBinaryDiffData(pd_utils.TextLines):
 
     @property
     def size_zipped(self):
+        """Size of the data when compressed
+        """
         return len(self.data_zipped)
 
     @property
     def data_raw(self):
+        """Non compressed version of the data.
+        """
         return zlib.decompress(bytes(self.data_zipped))
 
 
 class GitBinaryDiff(Diff):
-    START_CRE = re.compile("^GIT binary patch$")
-    DATA_START_CRE = re.compile("^(literal|delta) (\d+)$")
+    """Class to encapsulate a git binary diff
+    """
+    diff_type = "git_binary"
+    START_CRE = re.compile(r"^GIT binary patch$")
+    DATA_START_CRE = re.compile(r"^(literal|delta) (\d+)$")
     DATA_LINE_CRE = gitbase85.LINE_CRE
-    BLANK_LINE_CRE = re.compile("^\s*$")
+    BLANK_LINE_CRE = re.compile(r"^\s*$")
 
     @staticmethod
     def get_data_at(lines, start_index):
+        """If there is a valid git binary diff data in "lines" starting
+        at "index" extract and return it along with the index for the
+        first line after the data.
+        """
         smatch = False if start_index >= len(lines) else GitBinaryDiff.DATA_START_CRE.match(lines[start_index])
         if not smatch:
             return (None, start_index)
@@ -422,10 +525,7 @@ class GitBinaryDiff(Diff):
         end_data = index
         # absorb the blank line if there is one
         if GitBinaryDiff.BLANK_LINE_CRE.match(lines[index]):
-            has_blank = True
             index += 1
-        else:
-            has_blank = False
         dlines = lines[start_index:index]
         try:
             data_zipped = gitbase85.decode_lines(lines[start_index + 1:end_data])
@@ -439,6 +539,10 @@ class GitBinaryDiff(Diff):
 
     @staticmethod
     def get_diff_at(lines, start_index, raise_if_malformed=True):
+        """If there is a valid git binary diff in "lines" starting at
+        "index" extract and return it along with the index for the
+        first line after the diff.
+        """
         if not GitBinaryDiff.START_CRE.match(lines[start_index]):
             return (None, start_index)
         forward, index = GitBinaryDiff.get_data_at(lines, start_index + 1)
@@ -448,7 +552,7 @@ class GitBinaryDiff(Diff):
         return (GitBinaryDiff(lines[start_index:index], forward, reverse), index)
 
     def __init__(self, lines, forward, reverse):
-        Diff.__init__(self, "git_binary", lines, None, None)
+        Diff.__init__(self, lines, None, None)
         self.forward = forward
         self.reverse = reverse
 
@@ -457,6 +561,7 @@ class GitBinaryDiff(Diff):
 
 # NB. these are ordered by likelihood of being encountered
 DIFF_TYPES = [UnifiedDiff, GitBinaryDiff, ContextDiff]
+
 
 def get_diff_at(lines, index, raise_if_malformed):
     """If there is a valid unified, context or git binary diff in
@@ -469,12 +574,14 @@ def get_diff_at(lines, index, raise_if_malformed):
             return (diff, next_index)
     return (None, index)
 
+
 def diff_parse_lines(lines):
     """Parse list of lines and return a valid Diff or raise exception"""
     diff, index = get_diff_at(lines, 0, raise_if_malformed=True)
     if not diff or index < len(lines):
         raise ParseError(_("Not a valid diff."))
     return diff
+
 
 def diff_parse_text(text):
     """Parse text and return a valid DiffPlus or raise exception"""
