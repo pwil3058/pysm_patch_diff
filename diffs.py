@@ -136,6 +136,22 @@ class Diff:
         file_data = pd_utils.BEFORE_AFTER(before_file_data, after_file_data)
         return (cls(lines[start_index:start_index + 2], file_data, hunks), index)
 
+
+    @classmethod
+    def parse_lines(cls, lines):
+        """Parse list of lines and return a valid Diff or raise exception"""
+        diff, index = cls.get_diff_at(lines, 0, raise_if_malformed=True)
+        if not diff or index < len(lines):
+            raise ParseError(_("Not a valid \"{}\" diff.").format(cls.diff_type))
+        return diff
+
+
+    @classmethod
+    def parse_text(cls, text):
+        """Parse text and return a valid DiffPlus or raise exception"""
+        return cls.parse_lines(text.splitlines(True))
+
+
     def __init__(self, lines, file_data, hunks):
         self.header = pd_utils.TextLines(lines)
         self.file_data = file_data
