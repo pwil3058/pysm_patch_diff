@@ -18,11 +18,14 @@
 """
 
 import collections
+import difflib
+import os
 import re
 import zlib
 
 from . import diffstat
 from . import gitbase85
+from . import gitdelta
 from . import pd_utils
 
 
@@ -65,11 +68,25 @@ _ALT_TIMESTAMP_RE_STR = r"[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{2}:\d{2}:\d{2} \d
 _EITHER_TS_RE_STR = "(%s|%s)" % (_TIMESTAMP_RE_STR, _ALT_TIMESTAMP_RE_STR)
 
 
+# Diff line generator functions
+_DLGF = {"unified": difflib.unified_diff, "context": difflib.context_diff}
+
+
 def _trim_trailing_ws(line):
     """Return the given line with any trailing white space removed
     """
     return re.sub(r"[ \t]+$", "", line)
 
+
+def _to_text_lines(content):
+    """Convert "content" to a list if text lines
+    """
+    if isinstance(content, (list, tuple)):
+        return content
+    elif isinstance(content, str):
+        return content.splitlines(True)
+    else:
+        return content.decode().splitlines(True)
 
 class Diff:
     """A base class for all classes that encapsulate diffs.
@@ -150,6 +167,37 @@ class Diff:
     def parse_text(cls, text):
         """Parse text and return a valid DiffPlus or raise exception"""
         return cls.parse_lines(text.splitlines(True))
+
+
+    @classmethod
+    def generate_diff_lines(cls, before, after, num_context_lines=3):
+        """Generate the text lines of a text diff from the provided
+        before and after data.
+        """
+        before_lines = _to_text_lines(before.content)
+        after_lines = _to_text_lines(after.content)
+        diff_lines = []
+        dlgf = _DLGF[cls.diff_type]
+        for diff_line in dlgf(before_lines, after_lines,
+                              fromfile=before.label, tofile=after.label,
+                              fromfiledate=before.timestamp, tofiledate=after.timestamp,
+                              n=num_context_lines):
+            # NB: this can occur before the final line so we have to check all lines
+            if diff_line.endswith((os.linesep, "\n")):
+                diff_lines.append(diff_line)
+            else:
+                diff_lines.append(diff_line + "\n")
+                diff_lines.append("\\ No newline at end of file\n")
+        return diff_lines
+
+
+    @classmethod
+    def generate_diff(cls, before, after, num_context_lines=3):
+        """Generate the text based diff from the provided
+        before and after data.
+        """
+        diff_lines = cls.generate_diff_lines(before, after, num_context_lines)
+        return cls.parse_lines(diff_lines) if diff_lines else None
 
 
     def __init__(self, lines, file_data, hunks):
@@ -328,6 +376,7 @@ class UnifiedDiff(Diff):
         after_chunk = _CHUNK(int(match.group(4)), after_length)
         return (UnifiedDiffHunk(lines[start_index:index], before_chunk, after_chunk), index)
 
+
     def __init__(self, lines, file_data, hunks):
         Diff.__init__(self, lines, file_data, hunks)
 
@@ -491,6 +540,35 @@ class ContextDiff(Diff):
         Diff.__init__(self, lines, file_data, hunks)
 
 
+class ZippedData:
+    """Class to encapsulate zipped data
+    """
+    ZLIB_COMPRESSION_LEVEL = 6
+    def __init__(self, data):
+        if data is not None:
+            try:
+                self.raw_len = len(data)
+                self.zipped_data = zlib.compress(bytes(data), self.ZLIB_COMPRESSION_LEVEL)
+            except TypeError as edata:
+                print("ZIP:", len(data), ":", data, "|")
+                raise edata
+        else:
+            self.raw_len = None
+            self.zipped_data = None
+    def __bool__(self):
+        return self.zipped_data is not None
+    @property
+    def raw_data(self):
+        """The unzipped version of the encapsulated zipped data
+        """
+        return zlib.decompress(self.zipped_data)
+    @property
+    def zipped_len(self):
+        """The length of the zipped data
+        """
+        return len(self.zipped_data)
+
+
 class GitBinaryDiffData(pd_utils.TextLines):
     """Class to encapsulate the data component of a git binary patch
     """
@@ -566,6 +644,38 @@ class GitBinaryDiff(Diff):
             raise ParseError(_("No content in GIT binary patch text."))
         reverse, index = GitBinaryDiff.get_data_at(lines, index)
         return (GitBinaryDiff(lines[start_index:index], forward, reverse), index)
+
+
+    @staticmethod
+    def generate_diff_lines(before, after):
+        """Generate the text lines of a git binary diff from the provided
+        before and after data.
+        """
+
+        def _component_lines(fm_data, to_data):
+            delta = None
+            if fm_data.raw_len and to_data.raw_len:
+                delta = ZippedData(gitdelta.diff_delta(fm_data.raw_data, to_data.raw_data))
+            if delta and delta.zipped_len < to_data.zipped_len:
+                lines = ["delta {0}\n".format(delta.raw_len)] + gitbase85.encode_to_lines(delta.zipped_data) + ["\n"]
+            else:
+                lines = ["literal {0}\n".format(to_data.raw_len)] + gitbase85.encode_to_lines(to_data.zipped_data) + ["\n"]
+            return lines
+
+        if before.content == after.content:
+            return []
+        orig = ZippedData(before.content)
+        darned = ZippedData(after.content)
+        return ["GIT binary patch\n"] + _component_lines(orig, darned) + _component_lines(darned, orig)
+
+
+    @classmethod
+    def generate_diff(cls, before, after):
+        """Generate the git binary diff from the provided
+        before and after data.
+        """
+        diff_lines = cls.generate_diff_lines(before, after)
+        return cls.parse_lines(diff_lines) if diff_lines else None
 
     def __init__(self, lines, forward, reverse):
         Diff.__init__(self, lines, None, None)
