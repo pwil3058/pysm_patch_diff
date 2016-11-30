@@ -159,7 +159,7 @@ class Diff:
         """Parse list of lines and return a valid Diff or raise exception"""
         diff, index = cls.get_diff_at(lines, 0, raise_if_malformed=True)
         if not diff or index < len(lines):
-            raise ParseError(_("Not a valid \"{}\" diff.").format(cls.diff_type))
+            raise ParseError(_("Not a valid \"{}\" diff.").format(cls.diff_type), index)
         return diff
 
 
