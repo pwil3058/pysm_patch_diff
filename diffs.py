@@ -88,10 +88,12 @@ def _to_text_lines(content):
     else:
         return content.decode().splitlines(True)
 
+
 class Diff:
     """A base class for all classes that encapsulate diffs.
     """
     diff_type = None
+
     @staticmethod
     def _get_file_data_at(cre, lines, index):
         match = cre.match(lines[index])
@@ -153,7 +155,6 @@ class Diff:
         file_data = pd_utils.BEFORE_AFTER(before_file_data, after_file_data)
         return (cls(lines[start_index:start_index + 2], file_data, hunks), index)
 
-
     @classmethod
     def parse_lines(cls, lines):
         """Parse list of lines and return a valid Diff or raise exception"""
@@ -162,12 +163,10 @@ class Diff:
             raise ParseError(_("Not a valid \"{}\" diff.").format(cls.diff_type), index)
         return diff
 
-
     @classmethod
     def parse_text(cls, text):
         """Parse text and return a valid DiffPlus or raise exception"""
         return cls.parse_lines(text.splitlines(True))
-
 
     @classmethod
     def generate_diff_lines(cls, before, after, num_context_lines=3):
@@ -190,7 +189,6 @@ class Diff:
                 diff_lines.append("\\ No newline at end of file\n")
         return diff_lines
 
-
     @classmethod
     def generate_diff(cls, before, after, num_context_lines=3):
         """Generate the text based diff from the provided
@@ -198,7 +196,6 @@ class Diff:
         """
         diff_lines = cls.generate_diff_lines(before, after, num_context_lines)
         return cls.parse_lines(diff_lines) if diff_lines else None
-
 
     def __init__(self, lines, file_data, hunks):
         self.header = pd_utils.TextLines(lines)
@@ -376,7 +373,6 @@ class UnifiedDiff(Diff):
         after_chunk = _CHUNK(int(match.group(4)), after_length)
         return (UnifiedDiffHunk(lines[start_index:index], before_chunk, after_chunk), index)
 
-
     def __init__(self, lines, file_data, hunks):
         Diff.__init__(self, lines, file_data, hunks)
 
@@ -544,6 +540,7 @@ class ZippedData:
     """Class to encapsulate zipped data
     """
     ZLIB_COMPRESSION_LEVEL = 6
+
     def __init__(self, data):
         if data is not None:
             try:
@@ -555,13 +552,16 @@ class ZippedData:
         else:
             self.raw_len = None
             self.zipped_data = None
+
     def __bool__(self):
         return self.zipped_data is not None
+
     @property
     def raw_data(self):
         """The unzipped version of the encapsulated zipped data
         """
         return zlib.decompress(self.zipped_data)
+
     @property
     def zipped_len(self):
         """The length of the zipped data
@@ -645,7 +645,6 @@ class GitBinaryDiff(Diff):
         reverse, index = GitBinaryDiff.get_data_at(lines, index)
         return (GitBinaryDiff(lines[start_index:index], forward, reverse), index)
 
-
     @staticmethod
     def generate_diff_lines(before, after):
         """Generate the text lines of a git binary diff from the provided
@@ -667,7 +666,6 @@ class GitBinaryDiff(Diff):
         orig = ZippedData(before.content)
         darned = ZippedData(after.content)
         return ["GIT binary patch\n"] + _component_lines(orig, darned) + _component_lines(darned, orig)
-
 
     @classmethod
     def generate_diff(cls, before, after):

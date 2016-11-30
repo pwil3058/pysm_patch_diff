@@ -53,7 +53,6 @@ class _Preamble(TextLines):
         print(cls, lines, index, raise_if_malformed)
         return (NotImplemented, index)
 
-
     @classmethod
     def parse_lines(cls, lines):
         """Parse list of lines and return a valid preamble or raise exception"""
@@ -61,7 +60,6 @@ class _Preamble(TextLines):
         if not preamble or index < len(lines):
             raise ParseError(_("Not a valid \"{}\" diff.").format(cls.preamble_type_id), index)
         return preamble
-
 
     @classmethod
     def parse_text(cls, text):
@@ -75,13 +73,11 @@ class _Preamble(TextLines):
         print(file_path, before, after, came_from)
         return NotImplemented
 
-
     @classmethod
     def generate_preamble(cls, file_path, before, after, came_from=None):
         """Generate "clc" preamble
         """
         return cls.parse_lines(cls.generate_preamble_lines(file_path, before, after, came_from))
-
 
     def __init__(self, lines, file_data, extras=None):
         TextLines.__init__(self, lines)
@@ -184,8 +180,8 @@ class GitPreamble(_Preamble):
                 lines.append("copy from {0}\n".format(came_from.file_path))
                 lines.append("copy to {0}\n".format(file_path))
         if before or after:
-            hash_line = "index {0}".format(before.git_hash if before else "0" *48)
-            hash_line += "..{0}".format(after.git_hash if after else "0" *48)
+            hash_line = "index {0}".format(before.git_hash if before else "0" * 48)
+            hash_line += "..{0}".format(after.git_hash if after else "0" * 48)
             hash_line += " {0:07o}\n".format(after.lstats.st_mode) if after and before and before.lstats.st_mode == after.lstats.st_mode else "\n"
             lines.append(hash_line)
         return lines
@@ -387,6 +383,7 @@ def get_preambles_at(lines, index, raise_if_malformed):
         else:
             break
     return (preambles, index)
+
 
 def preamble_parse_lines(lines):
     """Parse "lines" and return the preamble contained therein
