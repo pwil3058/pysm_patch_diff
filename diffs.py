@@ -99,8 +99,8 @@ class Diff:
         match = cre.match(lines[index])
         if not match:
             return (None, index)
-        filepath = match.group(2) if match.group(2) else match.group(3)
-        return (_FILE_AND_TS(filepath, match.group(4)), index + 1)
+        file_path = match.group(2) if match.group(2) else match.group(3)
+        return (_FILE_AND_TS(file_path, match.group(4)), index + 1)
 
     @staticmethod
     def get_before_file_data_at(lines, index):
@@ -710,3 +710,23 @@ def diff_parse_lines(lines):
 def diff_parse_text(text):
     """Parse text and return a valid DiffPlus or raise exception"""
     return diff_parse_lines(text.splitlines(True))
+
+
+def apply_diff_to_file(file_path, diff, delete_empty=False, rel_subdir=lambda x:x):
+    from ..bab import runext
+    from ..bab import CmdResult
+    patch_cmd_hdr = ["patch", "--merge", "--force", "-p1", "--batch", ]
+    patch_cmd = patch_cmd_hdr + (["--remove-empty-files", file_path] if delete_empty else [file_path])
+    result = runext.run_cmd(patch_cmd, input_text=str(diff).encode())
+    # move all but the first line of stdout to stderr
+    # drop first line so that reports can be made relative to subdir
+    olines = result.stdout.splitlines(True)
+    prefix = "{0}: ".format(rel_subdir(file_path))
+    # Put file name at start of line so they make sense on their own
+    if len(olines) > 1:
+        stderr = prefix + prefix.join(olines[1:] + result.stderr.splitlines(True))
+    elif result.stderr:
+        stderr = prefix + prefix.join(result.stderr.splitlines(True))
+    else:
+        stderr = ""
+    return CmdResult(result.ecode, "", stderr)
