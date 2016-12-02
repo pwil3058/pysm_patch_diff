@@ -23,6 +23,7 @@ import os
 import re
 import zlib
 
+from . import a_diff
 from . import diffstat
 from . import gitbase85
 from . import gitdelta
@@ -326,6 +327,40 @@ class UnifiedDiffHunk(pd_utils.TextLines):
         """
         return self._process_tws(fix=False)
 
+    def _iter_lines(self, skip_if_starts_with):
+        """Iterate over lines skipping lines as directed
+        """
+        index = 1
+        while index < len(self.lines):
+            if not self.lines[index].startswith(skip_if_starts_with):
+                if (index + 1) == len(self.lines) or not self.lines[index + 1].startswith("\\"):
+                    yield self.lines[index][1:]
+                else:
+                    yield self.lines[index][1:].rstrip(os.linesep, "\n")
+            index += 1
+            if index < len(lines) and self.lines[index + 1].startswith("\\"):
+                index += 1
+
+    def iter_before_lines(self):
+        """Iterate over the lines in the "before" component of this hunk
+        """
+        return (line for line in self._iter_lines("+"))
+
+    def iter_after_lines(self):
+        """Iterate over the lines in the "after" component of this hunk
+        """
+        return (line for line in self._iter_lines("-"))
+
+    def get_before_lines_list(self):
+        """Get the list of lines in the "before" component of this hunk
+        """
+        return list(self.iter_before_lines())
+
+    def get_after_lines_list(self):
+        """Get the list of lines in the "after" component of this hunk
+        """
+        return list(self.iter_after_lines())
+
 
 class UnifiedDiff(Diff):
     """Class to encapsulate a unified diff
@@ -375,6 +410,11 @@ class UnifiedDiff(Diff):
 
     def __init__(self, lines, file_data, hunks):
         Diff.__init__(self, lines, file_data, hunks)
+
+    def apply_to_lines(self, lines):
+        """Apply this diff to the given "lines" and return the resulting lines.
+        """
+        return a_diff.AbstractDiff(self.hunks).apply_forwards(lines)
 
 
 class ContextDiffHunk(pd_utils.TextLines):
