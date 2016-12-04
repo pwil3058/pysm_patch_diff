@@ -79,7 +79,7 @@ class AbstractChunk(namedtuple("AbstractChunk", ["start_index", "lines"])):
     def matches_lines(self, lines):
         """Do "lines" match this chunk?
         """
-        return lines_contains_sub_lines_at(lines, self.lines, self.index)
+        return lines_contains_sub_lines_at(lines, self.lines, self.start_index)
 
     def find_first_in_lines(self, lines):
         """Find first occurence of our lines in "lines"
@@ -114,8 +114,18 @@ class AbstractDiff:
     def __init__(self, hunks):
         self._hunks = list()
         for hunk in hunks:
-            before = AbstractChunk(hunk.before.start, hunk.get_before_lines_list())
-            after = AbstractChunk(hunk.after.start, hunk.get_after_lines_list())
+            # NB: convert starting line numbers to 0 based indices
+            #<https://www.gnu.org/software/diffutils/manual/html_node/Detailed-Unified.html#Detailed-Unified>
+            # If a hunk contains just one line, only its start line number appears. Otherwise its line numbers
+            # look like ‘start,count’. An empty hunk is considered to start at the line that follows the hunk.
+            #
+            # If a hunk and its context contain two or more lines, its line numbers look like ‘start,count’.
+            # Otherwise only its end line number appears. An empty hunk is considered to end at the line that
+            # precedes the hunk.
+            b_lines = hunk.get_before_lines_list()
+            b_start_index = (hunk.before.start - 1) if len(b_lines) else hunk.before.start
+            before = AbstractChunk(b_start_index, b_lines)
+            after = AbstractChunk(hunk.after.start - 1, hunk.get_after_lines_list())
             self._hunks.append(AbstractHunk(before, after))
 
     def first_mismatch_before(self, lines):
@@ -145,5 +155,6 @@ class AbstractDiff:
             result += lines[index:hunk.before.start_index]
             result += hunk.after.lines
             index += len(hunk.before.lines)
-        assert self.first_mismatch_after(result) == -1
+        result += lines[index:]
+        assert self.first_mismatch_after(result) == -1, "{}:{}:{}".format(lines, result, self._hunks)
         return result

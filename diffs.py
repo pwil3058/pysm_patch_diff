@@ -337,9 +337,9 @@ class UnifiedDiffHunk(pd_utils.TextLines):
                 if (index + 1) == len(self.lines) or not self.lines[index + 1].startswith("\\"):
                     yield self.lines[index][1:]
                 else:
-                    yield self.lines[index][1:].rstrip(os.linesep, "\n")
+                    yield self.lines[index][1:].rstrip(os.linesep + "\n")
             index += 1
-            if index < len(lines) and self.lines[index + 1].startswith("\\"):
+            if index < len(self.lines) and self.lines[index].startswith("\\"):
                 index += 1
 
     def iter_before_lines(self):
@@ -424,7 +424,14 @@ class UnifiedDiff(Diff):
                 text = f_obj.read()
         except FileNotFoundError:
             text = ""
-        ecode, new_text, stderr = _TEMP_use_patch_on_text(text, self, err_file_path if err_file_path else file_path)
+        adiff = a_diff.AbstractDiff(self.hunks)
+        lines = text.splitlines(True)
+        if adiff.first_mismatch_before(lines) == -1:
+            new_text = "".join(adiff.apply_forwards(lines))
+            ecode = CmdResult.OK
+            stderr = ""
+        else:
+            ecode, new_text, stderr = _TEMP_use_patch_on_text(text, self, err_file_path if err_file_path else file_path)
         if not new_text and self.file_data.after.path == "/dev/null":
             os.remove(file_path)
         else:
