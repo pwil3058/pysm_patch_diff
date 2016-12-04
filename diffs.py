@@ -21,6 +21,7 @@ import collections
 import difflib
 import os
 import re
+import sys
 import zlib
 
 from . import a_diff
@@ -416,6 +417,20 @@ class UnifiedDiff(Diff):
         """
         return a_diff.AbstractDiff(self.hunks).apply_forwards(lines)
 
+    def apply_to_file(self, file_path, err_file_path=None):
+        from ..bab import CmdResult
+        try:
+            with open(file_path, "r") as f_obj:
+                text = f_obj.read()
+        except FileNotFoundError:
+            text = ""
+        ecode, new_text, stderr = _TEMP_use_patch_on_text(text, self, err_file_path if err_file_path else file_path)
+        if not new_text and self.file_data.after.path == "/dev/null":
+            os.remove(file_path)
+        else:
+            with open(file_path, "w") as f_obj:
+                f_obj.write(new_text)
+        return CmdResult(ecode, "", stderr)
 
 class ContextDiffHunk(pd_utils.TextLines):
     """Class to encapsulate a single context diff hunk
@@ -574,6 +589,21 @@ class ContextDiff(Diff):
 
     def __init__(self, lines, file_data, hunks):
         Diff.__init__(self, lines, file_data, hunks)
+
+    def apply_to_file(self, file_path, err_file_path=None):
+        from ..bab import CmdResult
+        try:
+            with open(file_path, "r") as f_obj:
+                text = f_obj.read()
+        except FileNotFoundError:
+            text = ""
+        ecode, new_text, stderr = _TEMP_use_patch_on_text(text, self, err_file_path if err_file_path else file_path)
+        if not new_text and self.file_data.after.path == "/dev/null":
+            os.remove(file_path)
+        else:
+            with open(file_path, "w") as f_obj:
+                f_obj.write(new_text)
+        return CmdResult(ecode, "", stderr)
 
 
 class ZippedData:
@@ -752,16 +782,26 @@ def diff_parse_text(text):
     return diff_parse_lines(text.splitlines(True))
 
 
-def apply_diff_to_file(file_path, diff, delete_empty=False, rel_subdir=lambda x:x):
+def _TEMP_use_patch_on_text(text, diff, err_file_path):
+    import tempfile
     from ..bab import runext
     from ..bab import CmdResult
-    patch_cmd_hdr = ["patch", "--merge", "--force", "-p1", "--batch", ]
-    patch_cmd = patch_cmd_hdr + (["--remove-empty-files", file_path] if delete_empty else [file_path])
+    tmp_file_path = None
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as f_obj:
+        tmp_file_path = f_obj.name
+        f_obj.write(text)
+    patch_cmd = ["patch", "--merge", "--force", "-p1", "--batch", tmp_file_path]
     result = runext.run_cmd(patch_cmd, input_text=str(diff).encode())
+    try:
+        with open(tmp_file_path, "r") as f_obj:
+            text = f_obj.read()
+        os.remove(tmp_file_path)
+    except FileNotFoundError:
+        text = ""
     # move all but the first line of stdout to stderr
     # drop first line so that reports can be made relative to subdir
     olines = result.stdout.splitlines(True)
-    prefix = "{0}: ".format(rel_subdir(file_path))
+    prefix = "{0}: ".format(err_file_path)
     # Put file name at start of line so they make sense on their own
     if len(olines) > 1:
         stderr = prefix + prefix.join(olines[1:] + result.stderr.splitlines(True))
@@ -769,4 +809,4 @@ def apply_diff_to_file(file_path, diff, delete_empty=False, rel_subdir=lambda x:
         stderr = prefix + prefix.join(result.stderr.splitlines(True))
     else:
         stderr = ""
-    return CmdResult(result.ecode, "", stderr)
+    return CmdResult(result.ecode, text, stderr)
