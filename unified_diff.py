@@ -199,5 +199,3 @@ class UnifiedDiff(diffs.Diff):
             with open(file_path, "w") as f_obj:
                 f_obj.write(new_text)
         return CmdResult(ecode, "", stderr)
-
-diffs.DIFF_TYPES.insert(0, UnifiedDiff)
