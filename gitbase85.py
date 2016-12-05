@@ -20,7 +20,6 @@ import re
 
 class Error(Exception): pass
 class ParseError(Error): pass
-class RangerError(Error): pass
 
 ENCODE = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~"
 assert len(set(ENCODE)) == 85

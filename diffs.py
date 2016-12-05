@@ -21,21 +21,13 @@ import collections
 import difflib
 import os
 import re
-import sys
-import zlib
 
-from . import a_diff
 from . import diffstat
-from . import gitbase85
-from . import gitdelta
 from . import pd_utils
 
 
 __all__ = []
 __author__ = "Peter Williams <pwil3058@gmail.com>"
-
-
-DEBUG = False
 
 
 class ParseError(Exception):
