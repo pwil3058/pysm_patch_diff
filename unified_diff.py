@@ -192,7 +192,7 @@ class UnifiedDiff(diffs.Diff):
             stderr = ""
         else:
             err_file_path = err_file_path if err_file_path else file_path
-            ecode, new_text, stderr = diffs._TEMP_use_patch_on_text(text, self, err_file_path)
+            ecode, new_text, stderr = pd_utils.apply_diff_to_text_using_patch(text, self, err_file_path)
         if not new_text and self.file_data.after.path == "/dev/null":
             os.remove(file_path)
         else:
