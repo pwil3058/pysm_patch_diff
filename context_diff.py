@@ -95,6 +95,52 @@ class ContextDiffHunk(pd_utils.TextLines):
         return self._process_tws(fix=False)
 
 
+    @staticmethod
+    def _iter_lines(lines, skip_if_starts_with=None):
+        """Iterate over lines skipping lines as directed
+        """
+        index = 1
+        while index < len(lines):
+            if skip_if_starts_with is None or not lines[index].startswith(skip_if_starts_with):
+                if (index + 1) == len(lines) or not lines[index + 1].startswith("\\"):
+                    yield lines[index][1:]
+                else:
+                    yield lines[index][1:].rstrip(os.linesep + "\n")
+            index += 1
+            if index < len(lines) and lines[index].startswith("\\"):
+                index += 1
+
+
+    def iter_before_lines(self):
+        """Iterate over the lines in the "before" component of this hunk
+        """
+        if self.before.numlines == 1:
+            start = self.after.offset
+            end = self.after.offset + self.after.numlines
+            return (line for line in self._iter_lines(self.lines[start:end], "+"))
+        else:
+            start = self.before.offset
+            end = self.before.offset + self.before.numlines
+            return (line for line in self._iter_lines(self.lines[start:end]))
+
+    def iter_after_lines(self):
+        """Iterate over the lines in the "after" component of this hunk
+        """
+        start = self.after.offset
+        end = self.after.offset + self.after.numlines
+        return (line for line in self._iter_lines(self.lines[start:end]))
+
+    def get_before_lines_list(self):
+        """Get the list of lines in the "before" component of this hunk
+        """
+        return list(self.iter_before_lines())
+
+    def get_after_lines_list(self):
+        """Get the list of lines in the "after" component of this hunk
+        """
+        return list(self.iter_after_lines())
+
+
 class ContextDiff(diffs.Diff):
     """Class to encapsulate a context diff
     """
@@ -200,8 +246,15 @@ class ContextDiff(diffs.Diff):
                 text = f_obj.read()
         except FileNotFoundError:
             text = ""
-        err_file_path = err_file_path if err_file_path else file_path
-        ecode, new_text, stderr = pd_utils.apply_diff_to_text_using_patch(text, self, err_file_path)
+        adiff = a_diff.AbstractDiff(self.hunks)
+        lines = text.splitlines(True)
+        if adiff.first_mismatch_before(lines) == -1:
+            new_text = "".join(adiff.apply_forwards(lines))
+            ecode = CmdResult.OK
+            stderr = ""
+        else:
+            err_file_path = err_file_path if err_file_path else file_path
+            ecode, new_text, stderr = pd_utils.apply_diff_to_text_using_patch(text, self, err_file_path)
         if not new_text and self.file_data.after.path == "/dev/null":
             os.remove(file_path)
         else:
