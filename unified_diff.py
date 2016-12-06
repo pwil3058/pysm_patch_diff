@@ -17,11 +17,11 @@
 """Create, parse and apply "unified" format diffs"""
 
 import collections
+import difflib
 import os
 import re
 
-from . import a_diff
-from . import diffs
+from . import t_diff
 from . import diffstat
 from . import pd_utils
 
@@ -52,7 +52,7 @@ class UnifiedDiffHunk(pd_utils.TextLines):
         for index in range(len(self.lines)):
             if self.lines[index].startswith("+"):
                 after_count += 1
-                repl_line = diffs._trim_trailing_ws(self.lines[index])
+                repl_line = t_diff.trim_trailing_ws(self.lines[index])
                 if len(repl_line) != len(self.lines[index]):
                     bad_lines.append(str(self.after.start + after_count - 1))
                     if fix:
@@ -60,7 +60,7 @@ class UnifiedDiffHunk(pd_utils.TextLines):
             elif self.lines[index].startswith(" "):
                 after_count += 1
             elif DEBUG and not self.lines[index].startswith("-"):
-                raise Bug("Unexpected end of unified diff hunk.")
+                raise t_diff.Bug("Unexpected end of unified diff hunk.")
         return bad_lines
 
     def get_diffstat_stats(self):
@@ -73,7 +73,7 @@ class UnifiedDiffHunk(pd_utils.TextLines):
             elif self.lines[index].startswith("+"):
                 stats.incr("inserted")
             elif DEBUG and not self.lines[index].startswith(" "):
-                raise Bug("Unexpected end of unified diff hunk.")
+                raise t_diff.Bug("Unexpected end of unified diff hunk.")
         return stats
 
     def fix_trailing_whitespace(self):
@@ -123,25 +123,25 @@ class UnifiedDiffHunk(pd_utils.TextLines):
         return list(self.iter_after_lines())
 
 
-class UnifiedDiff(diffs.Diff):
-    """Class to encapsulate a unified diff
+class UnifiedDiffParser(t_diff.TextDiffParser):
+    """Class to parse "unified" diffs
     """
-    diff_type = "unified"
-    BEFORE_FILE_CRE = re.compile(r"^--- ({0})(\s+{1})?(.*)$".format(pd_utils.PATH_RE_STR, diffs._EITHER_TS_RE_STR))
-    AFTER_FILE_CRE = re.compile(r"^\+\+\+ ({0})(\s+{1})?(.*)$".format(pd_utils.PATH_RE_STR, diffs._EITHER_TS_RE_STR))
+    diff_format = "unified"
+    BEFORE_FILE_CRE = re.compile(r"^--- ({0})(\s+{1})?(.*)$".format(pd_utils.PATH_RE_STR, t_diff.EITHER_TS_RE_STR))
+    AFTER_FILE_CRE = re.compile(r"^\+\+\+ ({0})(\s+{1})?(.*)$".format(pd_utils.PATH_RE_STR, t_diff.EITHER_TS_RE_STR))
     HUNK_DATA_CRE = re.compile(r"^@@\s+-(\d+)(,(\d+))?\s+\+(\d+)(,(\d+))?\s+@@\s*(.*)$")
 
     @staticmethod
     def get_before_file_data_at(lines, index):
-        return diffs.Diff._get_file_data_at(UnifiedDiff.BEFORE_FILE_CRE, lines, index)
+        return t_diff.TextDiffParser._get_file_data_at(UnifiedDiffParser.BEFORE_FILE_CRE, lines, index)
 
     @staticmethod
     def get_after_file_data_at(lines, index):
-        return diffs.Diff._get_file_data_at(UnifiedDiff.AFTER_FILE_CRE, lines, index)
+        return t_diff.TextDiffParser._get_file_data_at(UnifiedDiffParser.AFTER_FILE_CRE, lines, index)
 
     @staticmethod
     def get_hunk_at(lines, index):
-        match = UnifiedDiff.HUNK_DATA_CRE.match(lines[index])
+        match = UnifiedDiffParser.HUNK_DATA_CRE.match(lines[index])
         if not match:
             return (None, index)
         start_index = index
@@ -159,43 +159,40 @@ class UnifiedDiff(diffs.Diff):
                     before_count += 1
                     after_count += 1
                 elif not lines[index].startswith("\\"):
-                    raise ParseError(_("Unexpected end of unified diff hunk."), index)
+                    raise t_diff.ParseError(_("Unexpected end of unified diff hunk."), index)
                 index += 1
             if index < len(lines) and lines[index].startswith("\\"):
                 index += 1
         except IndexError:
-            raise ParseError(_("Unexpected end of patch text."))
+            raise t_diff.ParseError(_("Unexpected end of patch text."))
         before_chunk = _CHUNK(int(match.group(1)), before_length)
         after_chunk = _CHUNK(int(match.group(4)), after_length)
         return (UnifiedDiffHunk(lines[start_index:index], before_chunk, after_chunk), index)
 
-    def __init__(self, lines, file_data, hunks):
-        diffs.Diff.__init__(self, lines, file_data, hunks)
 
-    def apply_to_lines(self, lines):
-        """Apply this diff to the given "lines" and return the resulting lines.
-        """
-        return a_diff.AbstractDiff(self.hunks).apply_forwards(lines)
+def parse_diff_lines(lines):
+    """Parse list of lines and return a valid "unified" diff or raise exception"""
+    diff, index = UnifiedDiffParser.get_diff_at(lines, 0, raise_if_malformed=True)
+    if not diff or index < len(lines):
+        raise t_diff.ParseError(_("Not a valid \"unified\" diff."), index)
+    return diff
 
-    def apply_to_file(self, file_path, err_file_path=None):
-        from ..bab import CmdResult
-        try:
-            with open(file_path, "r") as f_obj:
-                text = f_obj.read()
-        except FileNotFoundError:
-            text = ""
-        adiff = a_diff.AbstractDiff(self.hunks)
-        lines = text.splitlines(True)
-        if adiff.first_mismatch_before(lines) == -1:
-            new_text = "".join(adiff.apply_forwards(lines))
-            ecode = CmdResult.OK
-            stderr = ""
-        else:
-            err_file_path = err_file_path if err_file_path else file_path
-            ecode, new_text, stderr = pd_utils.apply_diff_to_text_using_patch(text, self, err_file_path)
-        if not new_text and self.file_data.after.path == "/dev/null":
-            os.remove(file_path)
-        else:
-            with open(file_path, "w") as f_obj:
-                f_obj.write(new_text)
-        return CmdResult(ecode, "", stderr)
+
+def parse_diff_text(text):
+    """Parse text and return a valid "unified" diff or raise exception"""
+    return parse_diff_lines(text.splitlines(True))
+
+
+def generate_diff_lines(before, after, num_context_lines=3):
+    """Generate the text lines of a text diff from the provided
+    before and after data using "unified" diff format.
+    """
+    return t_diff.generate_diff_lines(difflib.unified_diff, before, after, num_context_lines)
+
+
+def generate_diff(before, after, num_context_lines=3):
+    """Generate the text based diff from the provided
+    before and after data.
+    """
+    diff_lines = generate_diff_lines(before, after, num_context_lines)
+    return parse_diff_lines(diff_lines) if diff_lines else None

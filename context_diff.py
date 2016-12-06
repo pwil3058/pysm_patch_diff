@@ -17,11 +17,11 @@
 """Create, parse and apply "context" format diffs"""
 
 import collections
+import difflib
 import os
 import re
 
-from . import a_diff
-from . import diffs
+from . import t_diff
 from . import diffstat
 from . import pd_utils
 
@@ -52,14 +52,14 @@ class ContextDiffHunk(pd_utils.TextLines):
         bad_lines = list()
         for index in range(self.after.offset + 1, self.after.offset + self.after.numlines):
             if self.lines[index].startswith("+ ") or self.lines[index].startswith("! "):
-                repl_line = self.lines[index][:2] + diffs._trim_trailing_ws(self.lines[index][2:])
+                repl_line = self.lines[index][:2] + t_diff.trim_trailing_ws(self.lines[index][2:])
                 after_count = index - (self.after.offset + 1)
                 if len(repl_line) != len(self.lines[index]):
                     bad_lines.append(str(self.after.start + after_count))
                     if fix:
                         self.lines[index] = repl_line
             elif DEBUG and not self.lines[index].startswith("  "):
-                raise Bug("Unexpected end of context diff hunk.")
+                raise t_diff.Bug("Unexpected end of context diff hunk.")
         return bad_lines
 
     def get_diffstat_stats(self):
@@ -72,14 +72,14 @@ class ContextDiffHunk(pd_utils.TextLines):
             elif self.lines[index].startswith("! "):
                 stats.incr("modified")
             elif DEBUG and not self.lines[index].startswith("  "):
-                raise Bug("Unexpected end of context diff \"before\" hunk.")
+                raise t_diff.Bug("Unexpected end of context diff \"before\" hunk.")
         for index in range(self.after.offset + 1, self.after.offset + self.after.numlines):
             if self.lines[index].startswith("+ "):
                 stats.incr("inserted")
             elif self.lines[index].startswith("! "):
                 stats.incr("modified")
             elif DEBUG and not self.lines[index].startswith("  "):
-                raise Bug("Unexpected end of context diff \"after\" hunk.")
+                raise t_diff.Bug("Unexpected end of context diff \"after\" hunk.")
         return stats
 
     def fix_trailing_whitespace(self):
@@ -93,7 +93,6 @@ class ContextDiffHunk(pd_utils.TextLines):
         space when the chunk is applied
         """
         return self._process_tws(fix=False)
-
 
     @staticmethod
     def _iter_lines(lines, skip_if_starts_with=None):
@@ -109,7 +108,6 @@ class ContextDiffHunk(pd_utils.TextLines):
             index += 1
             if index < len(lines) and lines[index].startswith("\\"):
                 index += 1
-
 
     def iter_before_lines(self):
         """Iterate over the lines in the "before" component of this hunk
@@ -141,23 +139,23 @@ class ContextDiffHunk(pd_utils.TextLines):
         return list(self.iter_after_lines())
 
 
-class ContextDiff(diffs.Diff):
-    """Class to encapsulate a context diff
+class ContextDiffParser(t_diff.TextDiffParser):
+    """Class to parse "context" diffs
     """
-    diff_type = "context"
-    BEFORE_FILE_CRE = re.compile(r"^\*\*\* ({0})(\s+{1})?$".format(pd_utils.PATH_RE_STR, diffs._EITHER_TS_RE_STR))
-    AFTER_FILE_CRE = re.compile(r"^--- ({0})(\s+{1})?$".format(pd_utils.PATH_RE_STR, diffs._EITHER_TS_RE_STR))
+    diff_format = "context"
+    BEFORE_FILE_CRE = re.compile(r"^\*\*\* ({0})(\s+{1})?$".format(pd_utils.PATH_RE_STR, t_diff.EITHER_TS_RE_STR))
+    AFTER_FILE_CRE = re.compile(r"^--- ({0})(\s+{1})?$".format(pd_utils.PATH_RE_STR, t_diff.EITHER_TS_RE_STR))
     HUNK_START_CRE = re.compile(r"^\*{15}\s*(.*)$")
     HUNK_BEFORE_CRE = re.compile(r"^\*\*\*\s+(\d+)(,(\d+))?\s+\*\*\*\*\s*(.*)$")
     HUNK_AFTER_CRE = re.compile(r"^---\s+(\d+)(,(\d+))?\s+----(.*)$")
 
     @staticmethod
     def get_before_file_data_at(lines, index):
-        return diffs.Diff._get_file_data_at(ContextDiff.BEFORE_FILE_CRE, lines, index)
+        return t_diff.TextDiffParser._get_file_data_at(ContextDiffParser.BEFORE_FILE_CRE, lines, index)
 
     @staticmethod
     def get_after_file_data_at(lines, index):
-        return diffs.Diff._get_file_data_at(ContextDiff.AFTER_FILE_CRE, lines, index)
+        return t_diff.TextDiffParser._get_file_data_at(ContextDiffParser.AFTER_FILE_CRE, lines, index)
 
     @staticmethod
     def _chunk(match):
@@ -173,27 +171,27 @@ class ContextDiff(diffs.Diff):
     def _get_before_chunk_at(lines, index):
         """Extract the context diff "before" chunk from "lines" starting
         at "index"."""
-        match = ContextDiff.HUNK_BEFORE_CRE.match(lines[index])
+        match = ContextDiffParser.HUNK_BEFORE_CRE.match(lines[index])
         if not match:
             return (None, index)
-        return (ContextDiff._chunk(match), index + 1)
+        return (ContextDiffParser._chunk(match), index + 1)
 
     @staticmethod
     def _get_after_chunk_at(lines, index):
         """Extract the context diff "after" chunk from "lines" starting
         at "index"."""
-        match = ContextDiff.HUNK_AFTER_CRE.match(lines[index])
+        match = ContextDiffParser.HUNK_AFTER_CRE.match(lines[index])
         if not match:
             return (None, index)
-        return (ContextDiff._chunk(match), index + 1)
+        return (ContextDiffParser._chunk(match), index + 1)
 
     @staticmethod
     def get_hunk_at(lines, index):
-        if not ContextDiff.HUNK_START_CRE.match(lines[index]):
+        if not ContextDiffParser.HUNK_START_CRE.match(lines[index]):
             return (None, index)
         start_index = index
         before_start_index = index + 1
-        before_chunk, index = ContextDiff._get_before_chunk_at(lines, before_start_index)
+        before_chunk, index = ContextDiffParser._get_before_chunk_at(lines, before_start_index)
         if not before_chunk:
             return (None, index)
         before_count = after_count = 0
@@ -201,7 +199,7 @@ class ContextDiff(diffs.Diff):
             after_chunk = None
             while before_count < before_chunk.length:
                 after_start_index = index
-                after_chunk, index = ContextDiff._get_after_chunk_at(lines, index)
+                after_chunk, index = ContextDiffParser._get_after_chunk_at(lines, index)
                 if after_chunk is not None:
                     break
                 before_count += 1
@@ -211,21 +209,21 @@ class ContextDiff(diffs.Diff):
                     before_count += 1
                     index += 1
                 after_start_index = index
-                after_chunk, index = ContextDiff._get_after_chunk_at(lines, index)
+                after_chunk, index = ContextDiffParser._get_after_chunk_at(lines, index)
                 if after_chunk is None:
-                    raise ParseError(_("Failed to find context diff \"after\" hunk."), index)
+                    raise t_diff.ParseError(_("Failed to find context diff \"after\" hunk."), index)
             while after_count < after_chunk.length:
                 if not lines[index].startswith(("! ", "+ ", "  ")):
                     if after_count == 0:
                         break
-                    raise ParseError(_("Unexpected end of context diff hunk."), index)
+                    raise t_diff.ParseError(_("Unexpected end of context diff hunk."), index)
                 after_count += 1
                 index += 1
             if index < len(lines) and lines[index].startswith(r"\ "):
                 after_count += 1
                 index += 1
         except IndexError:
-            raise ParseError(_("Unexpected end of patch text."))
+            raise t_diff.ParseError(_("Unexpected end of patch text."))
         before_hunk = _HUNK(before_start_index - start_index,
                             before_chunk.start,
                             before_chunk.length,
@@ -236,28 +234,30 @@ class ContextDiff(diffs.Diff):
                            index - after_start_index)
         return (ContextDiffHunk(lines[start_index:index], before_hunk, after_hunk), index)
 
-    def __init__(self, lines, file_data, hunks):
-        diffs.Diff.__init__(self, lines, file_data, hunks)
 
-    def apply_to_file(self, file_path, err_file_path=None):
-        from ..bab import CmdResult
-        try:
-            with open(file_path, "r") as f_obj:
-                text = f_obj.read()
-        except FileNotFoundError:
-            text = ""
-        adiff = a_diff.AbstractDiff(self.hunks)
-        lines = text.splitlines(True)
-        if adiff.first_mismatch_before(lines) == -1:
-            new_text = "".join(adiff.apply_forwards(lines))
-            ecode = CmdResult.OK
-            stderr = ""
-        else:
-            err_file_path = err_file_path if err_file_path else file_path
-            ecode, new_text, stderr = pd_utils.apply_diff_to_text_using_patch(text, self, err_file_path)
-        if not new_text and self.file_data.after.path == "/dev/null":
-            os.remove(file_path)
-        else:
-            with open(file_path, "w") as f_obj:
-                f_obj.write(new_text)
-        return CmdResult(ecode, "", stderr)
+def parse_diff_lines(lines):
+    """Parse list of lines and return a valid "context" diff or raise exception"""
+    diff, index = ContextDiffParser.get_diff_at(lines, 0, raise_if_malformed=True)
+    if not diff or index < len(lines):
+        raise t_diff.ParseError(_("Not a valid \"context\" diff."), index)
+    return diff
+
+
+def parse_diff_text(text):
+    """Parse text and return a valid "context" diff or raise exception"""
+    return parse_diff_lines(text.splitlines(True))
+
+
+def generate_diff_lines(before, after, num_context_lines=3):
+    """Generate the text lines of a text diff from the provided
+    before and after data using "context" diff format.
+    """
+    return t_diff.generate_diff_lines(difflib.context_diff, before, after, num_context_lines)
+
+
+def generate_diff(before, after, num_context_lines=3):
+    """Generate the text based diff from the provided
+    before and after data.
+    """
+    diff_lines = generate_diff_lines(before, after, num_context_lines)
+    return parse_diff_lines(diff_lines) if diff_lines else None

@@ -19,7 +19,6 @@
 import re
 import zlib
 
-from . import diffs
 from . import gitbase85
 from . import gitdelta
 from . import pd_utils
@@ -85,7 +84,7 @@ class GitBinaryDiffData(pd_utils.TextLines):
         return zlib.decompress(bytes(self.data_zipped))
 
 
-class GitBinaryDiff(diffs.Diff):
+class GitBinaryDiff:
     """Class to encapsulate a git binary diff
     """
     diff_type = "git_binary"
@@ -168,9 +167,34 @@ class GitBinaryDiff(diffs.Diff):
         return cls.parse_lines(diff_lines) if diff_lines else None
 
     def __init__(self, lines, forward, reverse):
-        diffs.Diff.__init__(self, lines, None, None)
+        self._lines = lines
         self.forward = forward
         self.reverse = reverse
+
+    def __str__(self):
+        return "".join(self._lines)
+
+    def iter_lines(self):
+        """Iterate over the lines in this diff
+        """
+        return (line for line in self._lines)
+
+    def fix_trailing_whitespace(self):
+        return []
+
+    def report_trailing_whitespace(self):
+        return []
+
+    def get_file_path(self, *args, **kwargs):
+        return None
+
+    def get_file_path_plus(self, *args, **kwargs):
+        return None
+
+    def get_diffstat_stats(self):
+        from . import diffstat
+        return diffstat.DiffStats()
+
 
     def get_outcome(self):
         # TODO: implement get_outcome() for GitBinaryDiff

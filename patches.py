@@ -132,8 +132,6 @@ class DiffPlus:
         self.preambles = preambles if isinstance(preambles, diff_preamble.Preambles) else diff_preamble.Preambles.fm_list(preambles)
         self.diff = diff
         self.trailing_junk = TextLines(trailing_junk)
-        if DEBUG:
-            assert isinstance(self.preambles, diff_preamble.Preambles) and (self.diff is None or isinstance(self.diff, diffs.Diff))
 
     def __str__(self):
         if self.diff is not None:
