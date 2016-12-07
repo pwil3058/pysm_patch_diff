@@ -199,3 +199,11 @@ class GitBinaryDiff:
     def get_outcome(self):
         # TODO: implement get_outcome() for GitBinaryDiff
         return None
+
+
+def get_diff_at(lines, index, raise_if_malformed):
+    """If there is a valid git binary diff in "lines" starting at "index"
+    extract and return it along with the index for the first line after
+    the diff.
+    """
+    return GitBinaryDiff.get_diff_at(lines, index, raise_if_malformed)

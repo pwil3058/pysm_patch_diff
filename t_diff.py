@@ -18,7 +18,6 @@
 """
 
 import collections
-import difflib
 import os
 import re
 
@@ -26,6 +25,7 @@ from . import a_diff
 from . import diffstat
 from . import pd_utils
 
+from .pd_utils import DiffOutcome
 
 __all__ = []
 __author__ = "Peter Williams <pwil3058@gmail.com>"
@@ -49,6 +49,7 @@ class Bug(Exception):
 # Useful named tuples to make code clearer
 StartAndLength = collections.namedtuple("StartAndLength", ["start", "length"])
 PathAndTimestamp = collections.namedtuple("PathAndTimestamp", ["path", "timestamp"])
+PathAndOutcome = collections.namedtuple("PathAndOutcome", ["path", "outcome"])
 
 # Useful strings for including in regular expressions
 _TIMESTAMP_RE_STR = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{9})? [-+]{1}\d{4}"
@@ -73,9 +74,69 @@ def to_text_lines(content):
         return content.decode().splitlines(True)
 
 
+class TextDiffHeader(collections.namedtuple("TextDiffHeader", ["lines", "before", "after"])):
+    """Class to encapsulate diff header containing file path(s) and
+    optional timestamps.
+    """
+    def __str__(self):
+        return "".join(self.lines)
+
+    def __iter__(self):
+        return (line for line in self.lines)
+
+    def get_file_path(self, strip=lambda x: x):
+        """Get the stripped of the file path
+        """
+        for path in [self.after.path, self.before.path]:
+            if path and path != "/dev/null":
+                return strip(path)
+        return None
+
+    def get_outcome(self):
+        """Get the expected outcome of applying the associated diff
+        """
+        if self.after.path == "/dev/null":
+            return DiffOutcome.DELETED
+        if self.before.path == "/dev/null":
+            return DiffOutcome.CREATED
+        return DiffOutcome.MODIFIED
+
+    def get_file_path_and_outcome(self, strip=lambda x: x):
+        """Get the file path that this diff applies to along with any
+        extra relevant data
+        """
+        file_path = self.get_file_path(strip)
+        outcome = self.get_outcome()
+        return pd_utils.FilePathPlus(path=file_path, status=outcome, expath=None)
+
+    @property
+    def is_consistent_with_strip_level(self, strip_level, play_hard_ball=False):
+        """Is the file data in the header compatible with being stripped
+        at the given level.
+        """
+        strip = pd_utils.gen_strip_level_function(strip_level)
+
+        try:
+            if self.before.path and self.before.path != "/dev/null":
+                if play_hard_ball and self.after.path and self.after.path != "/dev/null":
+                    return strip(self.before.path) == strip(self.after.path)
+                else:
+                    strip(self.before.path)
+            elif self.after.path and self.after.path != "/dev/null":
+                strip(self.before.path)
+            else:
+                return False
+        except pd_utils.TooManyStripLevels:
+            return False
+        else:
+            return True
+
+
 class TextDiffParser:
     """A base class for all classes that encapsulate diffs.
     """
+    BEFORE_FILE_CRE = None
+    AFTER_FILE_CRE = None
     diff_format = None
 
     @staticmethod
@@ -86,19 +147,17 @@ class TextDiffParser:
         file_path = match.group(2) if match.group(2) else match.group(3)
         return (PathAndTimestamp(file_path, match.group(4)), index + 1)
 
-    @staticmethod
-    def get_before_file_data_at(lines, index):
+    @classmethod
+    def get_before_file_data_at(cls, lines, index):
         """Get data for the "before" file the diff applies to
         """
-        print(lines[index:])
-        return (NotImplemented, index)
+        return cls._get_file_data_at(cls.BEFORE_FILE_CRE, lines, index)
 
-    @staticmethod
-    def get_after_file_data_at(lines, index):
+    @classmethod
+    def get_after_file_data_at(cls, lines, index):
         """Get data for the "after" file the diff applies to
         """
-        print(lines[index:])
-        return (NotImplemented, index)
+        return cls._get_file_data_at(cls.AFTER_FILE_CRE, lines, index)
 
     @staticmethod
     def get_hunk_at(lines, index):
@@ -136,8 +195,8 @@ class TextDiffParser:
                 raise ParseError(_("Expected unified diff hunks not found."), index)
             else:
                 return (None, start_index)
-        file_data = pd_utils.BEFORE_AFTER(before_file_data, after_file_data)
-        return (TextDiff(cls.diff_format, lines[start_index:start_index + 2], file_data, hunks), index)
+        header = TextDiffHeader(lines[start_index:start_index + 2], before_file_data, after_file_data)
+        return (TextDiff(cls.diff_format, header, hunks), index)
 
     @classmethod
     def parse_lines(cls, lines):
@@ -177,23 +236,24 @@ def generate_diff_lines(dlgf, before, after, num_context_lines=3):
 class TextDiff:
     """A class to encapsulate "text" diffs regardless of format.
     """
-    def __init__(self, diff_format, header_lines, file_data, hunks):
+    def __init__(self, diff_format, header, hunks):
         self.diff_format = diff_format
-        self.header_lines = pd_utils.TextLines(header_lines)
-        self.file_data = file_data
+        self.header = header
         self.hunks = list() if hunks is None else hunks
 
     @property
     def diff_type(self):
+        """Alias for "diff_format"
+        """
         return self.diff_format
 
     def __str__(self):
-        return str(self.header_lines) + "".join([str(hunk) for hunk in self.hunks])
+        return str(self.header) + "".join([str(hunk) for hunk in self.hunks])
 
     def iter_lines(self):
         """Iterate over the lines in this diff
         """
-        for line in self.header_lines:
+        for line in self.header:
             yield line
         for hunk in self.hunks:
             for line in hunk:
@@ -229,36 +289,19 @@ class TextDiff:
         """Get the file path that this diff applies to
         """
         strip = pd_utils.gen_strip_level_function(strip_level)
-        if isinstance(self.file_data, str):
-            return strip(self.file_data)
-        elif isinstance(self.file_data, pd_utils.BEFORE_AFTER):
-            return pd_utils.file_path_fm_pair(self.file_data, strip)
-        else:
-            return None
+        return self.header.get_file_path(strip)
 
-    def get_file_path_plus(self, strip_level=0):
+    def get_file_path_and_outcome(self, strip_level=0):
         """Get the file path that this diff applies to along with any
         extra relevant data
         """
         strip = pd_utils.gen_strip_level_function(strip_level)
-        if isinstance(self.file_data, str):
-            return pd_utils.FilePathPlus(path=strip(self.file_data), status=None, expath=None)
-        elif isinstance(self.file_data, pd_utils.BEFORE_AFTER):
-            return pd_utils.FilePathPlus.fm_pair(self.file_data, strip)
-        else:
-            return None
+        return self.header.get_file_path_and_outcome(strip)
 
     def get_outcome(self):
         """Get the "outcome" of applying this diff
         """
-        if isinstance(self.file_data, pd_utils.BEFORE_AFTER):
-            return pd_utils.file_outcome_fm_pair(self.file_data)
-        return None
-
-    def apply_to_lines(self, lines):
-        """Apply this diff to the given "lines" and return the resulting lines.
-        """
-        return a_diff.AbstractDiff(self.hunks).apply_forwards(lines)
+        return self.header.get_outcome()
 
     def apply_to_file(self, file_path, err_file_path=None):
         """Apply this diff to the given file
@@ -278,7 +321,7 @@ class TextDiff:
         else:
             err_file_path = err_file_path if err_file_path else file_path
             ecode, new_text, stderr = pd_utils.apply_diff_to_text_using_patch(text, self, err_file_path)
-        if not new_text and self.file_data.after.path == "/dev/null":
+        if not new_text and self.header.after.path == "/dev/null":
             os.remove(file_path)
         else:
             with open(file_path, "w") as f_obj:

@@ -17,10 +17,6 @@
 """Module to manage various type of "diff" instances
 """
 
-import collections
-import os
-import re
-
 from . import context_diff
 from . import git_binary_diff
 from . import unified_diff
@@ -43,8 +39,8 @@ def get_diff_at(lines, index, raise_if_malformed):
     "lines" starting at "index" extract and return it along with the
     index for the first line after the diff.
     """
-    # NB. these are ordered by likelihood of being encountered
-    for diff_type in [unified_diff.UnifiedDiffParser, git_binary_diff.GitBinaryDiff, context_diff.ContextDiffParser]:
+    # NB. these are ordered by likelihood of being encountered (these days)
+    for diff_type in [unified_diff, git_binary_diff, context_diff]:
         diff, next_index = diff_type.get_diff_at(lines, index, raise_if_malformed)
         if diff is not None:
             return (diff, next_index)

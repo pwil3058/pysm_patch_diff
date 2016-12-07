@@ -34,7 +34,6 @@ from .pd_utils import FilePathPlus
 
 # Useful named tuples to make code clearer
 _FILE_AND_TWS_LINES = collections.namedtuple("_FILE_AND_TWS_LINES", ["path", "tws_lines"])
-_DIFF_DATA = collections.namedtuple("_DIFF_DATA", ["file_data", "hunks"])
 
 
 DEBUG = False
@@ -190,12 +189,16 @@ class DiffPlus:
         return path
 
     def get_file_path_plus(self, strip_level):
-        path_plus = self.diff.get_file_path_plus(strip_level) if self.diff else None
-        if not path_plus:
-            path_plus = self.preambles.get_file_path_plus(strip_level=strip_level)
-        elif path_plus.status == FilePathPlus.ADDED and path_plus.expath is None:
-            path_plus.expath = self.preambles.get_file_expath(strip_level=strip_level)
-        return path_plus
+        from .pd_utils import DiffOutcome
+        file_path, outcome = self.diff.get_file_path_and_outcome(strip_level) if self.diff else (None, None)
+        if not file_path:
+            return self.preambles.get_file_path_plus(strip_level=strip_level)
+        elif outcome == DiffOutcome.CREATED:
+            return FilePathPlus(file_path, FilePathPlus.ADDED, self.preambles.get_file_expath(strip_level=strip_level))
+        elif outcome == DiffOutcome.DELETED:
+            return FilePathPlus(file_path, FilePathPlus.DELETED, None)
+        else:
+            return FilePathPlus(file_path, FilePathPlus.EXTANT, None)
 
     def get_hash_digest(self):
         h = hashlib.sha1()

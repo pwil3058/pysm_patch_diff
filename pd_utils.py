@@ -37,6 +37,14 @@ class TooManyStripLevels(Exception):
         self.levels = levels
 
 
+class DiffOutcome:
+    """Enum to describe the expected result of applying a diff
+    """
+    CREATED = 1
+    MODIFIED = 0
+    DELETED = -1
+
+
 def is_non_null(path):
     return path and path != "/dev/null"
 

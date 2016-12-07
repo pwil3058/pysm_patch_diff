@@ -132,14 +132,6 @@ class UnifiedDiffParser(t_diff.TextDiffParser):
     HUNK_DATA_CRE = re.compile(r"^@@\s+-(\d+)(,(\d+))?\s+\+(\d+)(,(\d+))?\s+@@\s*(.*)$")
 
     @staticmethod
-    def get_before_file_data_at(lines, index):
-        return t_diff.TextDiffParser._get_file_data_at(UnifiedDiffParser.BEFORE_FILE_CRE, lines, index)
-
-    @staticmethod
-    def get_after_file_data_at(lines, index):
-        return t_diff.TextDiffParser._get_file_data_at(UnifiedDiffParser.AFTER_FILE_CRE, lines, index)
-
-    @staticmethod
     def get_hunk_at(lines, index):
         match = UnifiedDiffParser.HUNK_DATA_CRE.match(lines[index])
         if not match:
@@ -168,6 +160,14 @@ class UnifiedDiffParser(t_diff.TextDiffParser):
         before_chunk = _CHUNK(int(match.group(1)), before_length)
         after_chunk = _CHUNK(int(match.group(4)), after_length)
         return (UnifiedDiffHunk(lines[start_index:index], before_chunk, after_chunk), index)
+
+
+def get_diff_at(lines, index, raise_if_malformed):
+    """If there is a valid unified diff in "lines" starting at "index"
+    extract and return it along with the index for the first line after
+    the diff.
+    """
+    return UnifiedDiffParser.get_diff_at(lines, index, raise_if_malformed)
 
 
 def parse_diff_lines(lines):

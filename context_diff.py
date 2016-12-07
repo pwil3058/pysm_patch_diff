@@ -150,14 +150,6 @@ class ContextDiffParser(t_diff.TextDiffParser):
     HUNK_AFTER_CRE = re.compile(r"^---\s+(\d+)(,(\d+))?\s+----(.*)$")
 
     @staticmethod
-    def get_before_file_data_at(lines, index):
-        return t_diff.TextDiffParser._get_file_data_at(ContextDiffParser.BEFORE_FILE_CRE, lines, index)
-
-    @staticmethod
-    def get_after_file_data_at(lines, index):
-        return t_diff.TextDiffParser._get_file_data_at(ContextDiffParser.AFTER_FILE_CRE, lines, index)
-
-    @staticmethod
     def _chunk(match):
         start = int(match.group(1))
         finish = int(match.group(3)) if match.group(3) is not None else start
@@ -233,6 +225,14 @@ class ContextDiffParser(t_diff.TextDiffParser):
                            after_chunk.length,
                            index - after_start_index)
         return (ContextDiffHunk(lines[start_index:index], before_hunk, after_hunk), index)
+
+
+def get_diff_at(lines, index, raise_if_malformed):
+    """If there is a valid context diff in "lines" starting at "index"
+    extract and return it along with the index for the first line after
+    the diff.
+    """
+    return ContextDiffParser.get_diff_at(lines, index, raise_if_malformed)
 
 
 def parse_diff_lines(lines):
