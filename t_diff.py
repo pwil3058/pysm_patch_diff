@@ -25,19 +25,10 @@ from . import a_diff
 from . import diffstat
 from . import pd_utils
 
-from .pd_utils import DiffOutcome
+from .pd_utils import DiffOutcome, ParseError
 
 __all__ = []
 __author__ = "Peter Williams <pwil3058@gmail.com>"
-
-
-class ParseError(Exception):
-    """Exception to signal parsing error
-    """
-    def __init__(self, message, lineno=None):
-        Exception.__init__(self)
-        self.message = message
-        self.lineno = lineno
 
 
 class Bug(Exception):

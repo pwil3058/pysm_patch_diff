@@ -16,6 +16,7 @@
 
 """Create, parse and apply "git" binary diffs"""
 
+import collections
 import re
 import zlib
 
@@ -23,8 +24,19 @@ from . import gitbase85
 from . import gitdelta
 from . import pd_utils
 
+from .pd_utils import ParseError
+
 __all__ = []
 __author__ = "Peter Williams <pwil3058@gmail.com>"
+
+
+class DataError(Exception):
+    """Exception to signal parsing error
+    """
+    def __init__(self, message, lineno=None):
+        Exception.__init__(self)
+        self.message = message
+        self.lineno = lineno
 
 
 class ZippedData:
@@ -83,127 +95,147 @@ class GitBinaryDiffData(pd_utils.TextLines):
         """
         return zlib.decompress(bytes(self.data_zipped))
 
-
-class GitBinaryDiff:
+class GitBinaryDiff(collections.namedtuple("GitBinaryDiff", ["lines", "forward", "reverse"])):
     """Class to encapsulate a git binary diff
     """
     diff_type = "git_binary"
-    START_CRE = re.compile(r"^GIT binary patch$")
-    DATA_START_CRE = re.compile(r"^(literal|delta) (\d+)$")
-    DATA_LINE_CRE = gitbase85.LINE_CRE
-    BLANK_LINE_CRE = re.compile(r"^\s*$")
-
-    @staticmethod
-    def get_data_at(lines, start_index):
-        """If there is a valid git binary diff data in "lines" starting
-        at "index" extract and return it along with the index for the
-        first line after the data.
-        """
-        smatch = False if start_index >= len(lines) else GitBinaryDiff.DATA_START_CRE.match(lines[start_index])
-        if not smatch:
-            return (None, start_index)
-        method = smatch.group(1)
-        size = int(smatch.group(2))
-        index = start_index + 1
-        while index < len(lines) and GitBinaryDiff.DATA_LINE_CRE.match(lines[index]):
-            index += 1
-        end_data = index
-        # absorb the blank line if there is one
-        if GitBinaryDiff.BLANK_LINE_CRE.match(lines[index]):
-            index += 1
-        dlines = lines[start_index:index]
-        try:
-            data_zipped = gitbase85.decode_lines(lines[start_index + 1:end_data])
-        except AssertionError:
-            raise DataError(_("Inconsistent git binary patch data."), lineno=start_index)
-        raw_size = len(zlib.decompress(bytes(data_zipped)))
-        if raw_size != size:
-            emsg = _("Git binary patch expected {0} bytes. Got {1} bytes.").format(size, raw_size)
-            raise DataError(emsg, lineno=start_index)
-        return (GitBinaryDiffData(dlines, method, raw_size, data_zipped), index)
-
-    @staticmethod
-    def get_diff_at(lines, start_index, raise_if_malformed=True):
-        """If there is a valid git binary diff in "lines" starting at
-        "index" extract and return it along with the index for the
-        first line after the diff.
-        """
-        if not GitBinaryDiff.START_CRE.match(lines[start_index]):
-            return (None, start_index)
-        forward, index = GitBinaryDiff.get_data_at(lines, start_index + 1)
-        if forward is None and raise_if_malformed:
-            raise ParseError(_("No content in GIT binary patch text."))
-        reverse, index = GitBinaryDiff.get_data_at(lines, index)
-        return (GitBinaryDiff(lines[start_index:index], forward, reverse), index)
-
-    @staticmethod
-    def generate_diff_lines(before, after):
-        """Generate the text lines of a git binary diff from the provided
-        before and after data.
-        """
-
-        def _component_lines(fm_data, to_data):
-            delta = None
-            if fm_data.raw_len and to_data.raw_len:
-                delta = ZippedData(gitdelta.diff_delta(fm_data.raw_data, to_data.raw_data))
-            if delta and delta.zipped_len < to_data.zipped_len:
-                lines = ["delta {0}\n".format(delta.raw_len)] + gitbase85.encode_to_lines(delta.zipped_data) + ["\n"]
-            else:
-                lines = ["literal {0}\n".format(to_data.raw_len)] + gitbase85.encode_to_lines(to_data.zipped_data) + ["\n"]
-            return lines
-
-        if before.content == after.content:
-            return []
-        orig = ZippedData(before.content)
-        darned = ZippedData(after.content)
-        return ["GIT binary patch\n"] + _component_lines(orig, darned) + _component_lines(darned, orig)
-
-    @classmethod
-    def generate_diff(cls, before, after):
-        """Generate the git binary diff from the provided
-        before and after data.
-        """
-        diff_lines = cls.generate_diff_lines(before, after)
-        return cls.parse_lines(diff_lines) if diff_lines else None
-
-    def __init__(self, lines, forward, reverse):
-        self._lines = lines
-        self.forward = forward
-        self.reverse = reverse
 
     def __str__(self):
-        return "".join(self._lines)
+        return "".join(self.lines)
 
     def iter_lines(self):
         """Iterate over the lines in this diff
         """
-        return (line for line in self._lines)
+        return (line for line in self.lines)
 
-    def fix_trailing_whitespace(self):
+    @staticmethod
+    def fix_trailing_whitespace():
+        """Fix any lines that would introduce trailing white space when
+        the diff is applied and return a list of the changed lines
+        """
         return []
 
-    def report_trailing_whitespace(self):
+    @staticmethod
+    def report_trailing_whitespace():
+        """Return a list of lines that will introduce tailing white
+        space when the diff is applied
+        """
         return []
 
-    def get_file_path(self, *args, **kwargs):
+    @staticmethod
+    def get_file_path(*args, **kwargs):
+        """Get the file path that this diff applies to
+        """
         return None
 
-    def get_file_path_plus(self, *args, **kwargs):
-        return None
+    @staticmethod
+    def get_file_path_plus(*args, **kwargs):
+        """Get the file path that this diff applies to along with any
+        extra relevant data
+        """
+        return (None, None)
 
-    def get_diffstat_stats(self):
+    @staticmethod
+    def get_diffstat_stats():
+        """Return the "diffstat" statistics for this diff
+        """
         from . import diffstat
         return diffstat.DiffStats()
 
-
-    def get_outcome(self):
+    @staticmethod
+    def get_outcome():
+        """Get the "outcome" of applying this diff
+        """
         # TODO: implement get_outcome() for GitBinaryDiff
         return None
 
 
-def get_diff_at(lines, index, raise_if_malformed):
-    """If there is a valid git binary diff in "lines" starting at "index"
-    extract and return it along with the index for the first line after
-    the diff.
+START_CRE = re.compile(r"^GIT binary patch$")
+DATA_START_CRE = re.compile(r"^(literal|delta) (\d+)$")
+BLANK_LINE_CRE = re.compile(r"^\s*$")
+
+
+def get_data_at(lines, start_index):
+    """If there is a valid git binary diff data in "lines" starting
+    at "index" extract and return it along with the index for the
+    first line after the data.
     """
-    return GitBinaryDiff.get_diff_at(lines, index, raise_if_malformed)
+    smatch = False if start_index >= len(lines) else DATA_START_CRE.match(lines[start_index])
+    if not smatch:
+        return (None, start_index)
+    method = smatch.group(1)
+    size = int(smatch.group(2))
+    index = start_index + 1
+    while index < len(lines) and gitbase85.LINE_CRE.match(lines[index]):
+        index += 1
+    end_data = index
+    # absorb the blank line if there is one
+    if BLANK_LINE_CRE.match(lines[index]):
+        index += 1
+    dlines = lines[start_index:index]
+    try:
+        data_zipped = gitbase85.decode_lines(lines[start_index + 1:end_data])
+    except AssertionError:
+        raise DataError(_("Inconsistent git binary patch data."), lineno=start_index)
+    raw_size = len(zlib.decompress(bytes(data_zipped)))
+    if raw_size != size:
+        emsg = _("Git binary patch expected {0} bytes. Got {1} bytes.").format(size, raw_size)
+        raise DataError(emsg, lineno=start_index)
+    return (GitBinaryDiffData(dlines, method, raw_size, data_zipped), index)
+
+
+def get_diff_at(lines, start_index, raise_if_malformed=True):
+    """If there is a valid git binary diff in "lines" starting at
+    "index" extract and return it along with the index for the
+    first line after the diff.
+    """
+    if not START_CRE.match(lines[start_index]):
+        return (None, start_index)
+    forward, index = get_data_at(lines, start_index + 1)
+    if forward is None and raise_if_malformed:
+        raise ParseError(_("No content in GIT binary patch text."))
+    reverse, index = get_data_at(lines, index)
+    return (GitBinaryDiff(lines[start_index:index], forward, reverse), index)
+
+
+def parse_diff_lines(lines):
+    """Parse list of lines and return a valid "unified" diff or raise exception"""
+    diff, index = get_diff_at(lines, 0, raise_if_malformed=True)
+    if not diff or index < len(lines):
+        raise ParseError(_("Not a valid \"unified\" diff."), index)
+    return diff
+
+
+def parse_diff_text(text):
+    """Parse text and return a valid "unified" diff or raise exception"""
+    return parse_diff_lines(text.splitlines(True))
+
+
+def generate_diff_lines(before, after):
+    """Generate the text lines of a git binary diff from the provided
+    before and after data.
+    """
+
+    def _component_lines(fm_data, to_data):
+        delta = None
+        if fm_data.raw_len and to_data.raw_len:
+            delta = ZippedData(gitdelta.diff_delta(fm_data.raw_data, to_data.raw_data))
+        if delta and delta.zipped_len < to_data.zipped_len:
+            lines = ["delta {0}\n".format(delta.raw_len)] + gitbase85.encode_to_lines(delta.zipped_data) + ["\n"]
+        else:
+            lines = ["literal {0}\n".format(to_data.raw_len)] + gitbase85.encode_to_lines(to_data.zipped_data) + ["\n"]
+        return lines
+
+    if before.content == after.content:
+        return []
+    orig = ZippedData(before.content)
+    darned = ZippedData(after.content)
+    return ["GIT binary patch\n"] + _component_lines(orig, darned) + _component_lines(darned, orig)
+
+
+def generate_diff(before, after):
+    """Generate the git binary diff from the provided
+    before and after data.
+    """
+    diff_lines = generate_diff_lines(before, after)
+    return parse_diff_lines(diff_lines) if diff_lines else None

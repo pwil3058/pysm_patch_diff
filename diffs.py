@@ -14,7 +14,8 @@
 #  The Free Software Foundation, Inc., 51 Franklin Street,
 #  Fifth Floor, Boston, MA 02110-1301 USA
 
-"""Module to manage various type of "diff" instances
+"""Module to parse various type of "diff" instances when we don't
+know what type of diff the text (lines) contain
 """
 
 from . import context_diff

@@ -30,6 +30,15 @@ PATH_RE_STR = r""""([^"]+)"|(\S+)"""
 BEFORE_AFTER = collections.namedtuple("BEFORE_AFTER", ["before", "after"])
 
 
+class ParseError(Exception):
+    """Exception to signal parsing error
+    """
+    def __init__(self, message, lineno=None):
+        Exception.__init__(self)
+        self.message = message
+        self.lineno = lineno
+
+
 class TooManyStripLevels(Exception):
     def __init__(self, message, path, levels):
         self.message = message
