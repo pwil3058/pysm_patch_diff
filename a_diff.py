@@ -112,21 +112,7 @@ class AbstractDiff:
     """Class to encapsulate an abstract diff as a list of abstract hunks.
     """
     def __init__(self, hunks):
-        self._hunks = list()
-        for hunk in hunks:
-            # NB: convert starting line numbers to 0 based indices
-            #<https://www.gnu.org/software/diffutils/manual/html_node/Detailed-Unified.html#Detailed-Unified>
-            # If a hunk contains just one line, only its start line number appears. Otherwise its line numbers
-            # look like ‘start,count’. An empty hunk is considered to start at the line that follows the hunk.
-            #
-            # If a hunk and its context contain two or more lines, its line numbers look like ‘start,count’.
-            # Otherwise only its end line number appears. An empty hunk is considered to end at the line that
-            # precedes the hunk.
-            b_lines = hunk.get_before_lines_list()
-            b_start_index = (hunk.before.start - 1) if len(b_lines) else hunk.before.start
-            before = AbstractChunk(b_start_index, b_lines)
-            after = AbstractChunk(hunk.after.start - 1, hunk.get_after_lines_list())
-            self._hunks.append(AbstractHunk(before, after))
+        self._hunks = [hunk.get_abstract_diff_hunk() for hunk in hunks]
 
     def first_mismatch_before(self, lines):
         """Find the fist chunk whose before hunk doesn't match "lines"

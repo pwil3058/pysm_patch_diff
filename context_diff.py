@@ -35,14 +35,9 @@ _CHUNK = collections.namedtuple("_CHUNK", ["start", "length"])
 _HUNK = collections.namedtuple("_HUNK", ["offset", "start", "length", "numlines"])
 
 
-class ContextDiffHunk(pd_utils.TextLines):
+class ContextDiffHunk(t_diff.TextDiffHunk):
     """Class to encapsulate a single context diff hunk
     """
-    def __init__(self, lines, before, after):
-        pd_utils.TextLines.__init__(self, lines)
-        self.before = before
-        self.after = after
-
     def _process_tws(self, fix=False):
         """If "fix" is True remove any trailing white space from
         changed lines and return a list of lines that were fixed
@@ -82,33 +77,6 @@ class ContextDiffHunk(pd_utils.TextLines):
                 raise t_diff.Bug("Unexpected end of context diff \"after\" hunk.")
         return stats
 
-    def fix_trailing_whitespace(self):
-        """Fix any lines that would introduce trailing white space when
-        the chunk is applied and return a list of the changed lines
-        """
-        return self._process_tws(fix=True)
-
-    def report_trailing_whitespace(self):
-        """Return a list of lines that will introduce tailing white
-        space when the chunk is applied
-        """
-        return self._process_tws(fix=False)
-
-    @staticmethod
-    def _iter_lines(lines, skip_if_starts_with=None):
-        """Iterate over lines skipping lines as directed
-        """
-        index = 1
-        while index < len(lines):
-            if skip_if_starts_with is None or not lines[index].startswith(skip_if_starts_with):
-                if (index + 1) == len(lines) or not lines[index + 1].startswith("\\"):
-                    yield lines[index][1:]
-                else:
-                    yield lines[index][1:].rstrip(os.linesep + "\n")
-            index += 1
-            if index < len(lines) and lines[index].startswith("\\"):
-                index += 1
-
     def iter_before_lines(self):
         """Iterate over the lines in the "before" component of this hunk
         """
@@ -127,16 +95,6 @@ class ContextDiffHunk(pd_utils.TextLines):
         start = self.after.offset
         end = self.after.offset + self.after.numlines
         return (line for line in self._iter_lines(self.lines[start:end]))
-
-    def get_before_lines_list(self):
-        """Get the list of lines in the "before" component of this hunk
-        """
-        return list(self.iter_before_lines())
-
-    def get_after_lines_list(self):
-        """Get the list of lines in the "after" component of this hunk
-        """
-        return list(self.iter_after_lines())
 
 
 class ContextDiffParser(t_diff.TextDiffParser):

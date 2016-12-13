@@ -33,14 +33,9 @@ DEBUG = False
 _CHUNK = collections.namedtuple("_CHUNK", ["start", "length"])
 
 
-class UnifiedDiffHunk(pd_utils.TextLines):
+class UnifiedDiffHunk(t_diff.TextDiffHunk):
     """Class to encapsulate a single unified diff hunk
     """
-    def __init__(self, lines, before, after):
-        pd_utils.TextLines.__init__(self, lines)
-        self.before = before
-        self.after = after
-
     def _process_tws(self, fix=False):
         """If "fix" is True remove any trailing white space from
         changed lines and return a list of lines that were fixed
@@ -76,51 +71,15 @@ class UnifiedDiffHunk(pd_utils.TextLines):
                 raise t_diff.Bug("Unexpected end of unified diff hunk.")
         return stats
 
-    def fix_trailing_whitespace(self):
-        """Fix any lines that would introduce trailing white space when
-        the chunk is applied and return a list of the changed lines
-        """
-        return self._process_tws(fix=True)
-
-    def report_trailing_whitespace(self):
-        """Return a list of lines that will introduce tailing white
-        space when the chunk is applied
-        """
-        return self._process_tws(fix=False)
-
-    def _iter_lines(self, skip_if_starts_with):
-        """Iterate over lines skipping lines as directed
-        """
-        index = 1
-        while index < len(self.lines):
-            if not self.lines[index].startswith(skip_if_starts_with):
-                if (index + 1) == len(self.lines) or not self.lines[index + 1].startswith("\\"):
-                    yield self.lines[index][1:]
-                else:
-                    yield self.lines[index][1:].rstrip(os.linesep + "\n")
-            index += 1
-            if index < len(self.lines) and self.lines[index].startswith("\\"):
-                index += 1
-
     def iter_before_lines(self):
         """Iterate over the lines in the "before" component of this hunk
         """
-        return (line for line in self._iter_lines("+"))
+        return (line for line in self._iter_lines(self.lines, "+"))
 
     def iter_after_lines(self):
         """Iterate over the lines in the "after" component of this hunk
         """
-        return (line for line in self._iter_lines("-"))
-
-    def get_before_lines_list(self):
-        """Get the list of lines in the "before" component of this hunk
-        """
-        return list(self.iter_before_lines())
-
-    def get_after_lines_list(self):
-        """Get the list of lines in the "after" component of this hunk
-        """
-        return list(self.iter_after_lines())
+        return (line for line in self._iter_lines(self.lines, "-"))
 
 
 class UnifiedDiffParser(t_diff.TextDiffParser):

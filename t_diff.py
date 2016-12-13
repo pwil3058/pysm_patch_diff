@@ -224,14 +224,85 @@ def generate_diff_lines(dlgf, before, after, num_context_lines=3):
     return diff_lines
 
 
-class TextDiff:
+class TextDiffHunk(collections.namedtuple("TextDiffHunk", ["lines", "before", "after"])):
+    """Class to encapsulate a single unified diff hunk
+    """
+    def __str__(self):
+        return "".join(self.lines)
+
+    def __iter__(self):
+        return (line for line in self.lines)
+
+    def _process_tws(self, fix=False):
+        """If "fix" is True remove any trailing white space from
+        changed lines and return a list of lines that were fixed
+        otherwise return a list of changed lines that have tailing
+        white space
+        """
+        return list()
+
+    def get_diffstat_stats(self):
+        """Return the "diffstat" statistics for this chunk
+        """
+        return diffstat.DiffStats()
+
+    def fix_trailing_whitespace(self):
+        """Fix any lines that would introduce trailing white space when
+        the chunk is applied and return a list of the changed lines
+        """
+        return self._process_tws(fix=True)
+
+    def report_trailing_whitespace(self):
+        """Return a list of lines that will introduce tailing white
+        space when the chunk is applied
+        """
+        return self._process_tws(fix=False)
+
+    @staticmethod
+    def _iter_lines(lines, skip_if_starts_with=None):
+        """Iterate over lines skipping lines as directed
+        """
+        index = 1
+        while index < len(lines):
+            if skip_if_starts_with is None or not lines[index].startswith(skip_if_starts_with):
+                if (index + 1) == len(lines) or not lines[index + 1].startswith("\\"):
+                    yield lines[index][1:]
+                else:
+                    yield lines[index][1:].rstrip(os.linesep + "\n")
+            index += 1
+            if index < len(lines) and lines[index].startswith("\\"):
+                index += 1
+
+    def iter_before_lines(self):
+        """Iterate over the lines in the "before" component of this hunk
+        """
+        return (line for line in self._iter_lines("+"))
+
+    def iter_after_lines(self):
+        """Iterate over the lines in the "after" component of this hunk
+        """
+        return (line for line in self._iter_lines("-"))
+
+    def get_abstract_diff_hunk(self):
+        """Return the AbstractHunk version of this hunk
+        """
+        # NB: convert starting line numbers to 0 based indices
+        #<https://www.gnu.org/software/diffutils/manual/html_node/Detailed-Unified.html#Detailed-Unified>
+        # If a hunk contains just one line, only its start line number appears. Otherwise its line numbers
+        # look like ‘start,count’. An empty hunk is considered to start at the line that follows the hunk.
+        #
+        # If a hunk and its context contain two or more lines, its line numbers look like ‘start,count’.
+        # Otherwise only its end line number appears. An empty hunk is considered to end at the line that
+        # precedes the hunk.
+        b_lines = list(self.iter_before_lines())
+        b_start_index = (self.before.start - 1) if len(b_lines) else self.before.start
+        before = a_diff.AbstractChunk(b_start_index, b_lines)
+        after = a_diff.AbstractChunk(self.after.start - 1, list(self.iter_after_lines()))
+        return a_diff.AbstractHunk(before, after)
+
+class TextDiff(collections.namedtuple("TextDiff", ["diff_format", "header", "hunks"])):
     """A class to encapsulate "text" diffs regardless of format.
     """
-    def __init__(self, diff_format, header, hunks):
-        self.diff_format = diff_format
-        self.header = header
-        self.hunks = list() if hunks is None else hunks
-
     @property
     def diff_type(self):
         """Alias for "diff_format"
