@@ -153,7 +153,7 @@ class GitBinaryDiff(collections.namedtuple("GitBinaryDiff", ["lines", "forward",
         """Apply this diff to the given file
         """
         from ..bab import CmdResult
-        ecode = CmdResult.OK
+        retval = CmdResult.OK
         stderr = ""
         err_file_path = err_file_path if err_file_path else file_path
         if self.forward.method == "literal":
@@ -184,7 +184,7 @@ class GitBinaryDiff(collections.namedtuple("GitBinaryDiff", ["lines", "forward",
                 except IOError as edata:
                     retval = CmdResult.ERROR
                     stderr = "\"{0}\": {1}\n".format(err_file_path, edata)
-        return CmdResult(ecode, "", stderr)
+        return CmdResult(retval, "", stderr)
 
 
 START_CRE = re.compile(r"^GIT binary patch$")
