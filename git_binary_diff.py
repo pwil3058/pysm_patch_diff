@@ -18,6 +18,7 @@
 
 import collections
 import re
+import sys
 import zlib
 
 from . import gitbase85
@@ -149,12 +150,11 @@ class GitBinaryDiff(collections.namedtuple("GitBinaryDiff", ["lines", "forward",
         # TODO: implement get_outcome() for GitBinaryDiff
         return None
 
-    def apply_to_file(self, file_path, err_file_path=None):
+    def apply_to_file(self, file_path, err_file_path=None, rctx=sys):
         """Apply this diff to the given file
         """
         from ..bab import CmdResult
         retval = CmdResult.OK
-        stderr = ""
         err_file_path = err_file_path if err_file_path else file_path
         if self.forward.method == "literal":
             # if it's literal just insert the raw data.
@@ -163,7 +163,7 @@ class GitBinaryDiff(collections.namedtuple("GitBinaryDiff", ["lines", "forward",
                     f_obj.write(self.forward.data_raw)
             except IOError as edata:
                 retval = CmdResult.ERROR
-                stderr = "\"{0}\": {1}\n".format(err_file_path, edata)
+                rctx.stderr.write("\"{0}\": {1}\n".format(err_file_path, edata))
         else:
             from . import gitdelta
             try:
@@ -171,20 +171,20 @@ class GitBinaryDiff(collections.namedtuple("GitBinaryDiff", ["lines", "forward",
                     contents = f_obj.read()
             except IOError as edata:
                 retval = CmdResult.ERROR
-                stderr = "\"{0}\": {1}\n".format(err_file_path, edata)
+                rctx.stderr.write("\"{0}\": {1}\n".format(err_file_path, edata))
             try:
                 new_contents = gitdelta.patch_delta(contents, self.forward.data_raw)
             except gitdelta.PatchError as edata:
                 retval = CmdResult.ERROR
-                stderr = "\"{0}\": {1}.\n".format(err_file_path, edata)
+                rctx.stderr.write("\"{0}\": {1}.\n".format(err_file_path, edata))
             else:
                 try:
                     with open(file_path, "wb") as f_obj:
                         f_obj.write(new_contents)
                 except IOError as edata:
                     retval = CmdResult.ERROR
-                    stderr = "\"{0}\": {1}\n".format(err_file_path, edata)
-        return CmdResult(retval, "", stderr)
+                    rctx.stderr.write("\"{0}\": {1}\n".format(err_file_path, edata))
+        return retval
 
 
 START_CRE = re.compile(r"^GIT binary patch$")

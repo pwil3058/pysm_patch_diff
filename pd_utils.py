@@ -22,6 +22,7 @@ __author__ = "Peter Williams <pwil3058@gmail.com>"
 
 import collections
 import os
+import sys
 
 # Useful snippet for inclusion in regular expression
 PATH_RE_STR = r""""([^"]+)"|(\S+)"""
@@ -172,7 +173,7 @@ def gen_strip_level_function(level):
     return lambda path: path if path.startswith(os.sep) else strip_n(path, level)
 
 
-def apply_diff_to_text_using_patch(text, diff, err_file_path):
+def apply_diff_to_text_using_patch(text, diff, err_file_path, rctx=sys):
     import tempfile
     from ..bab import runext
     from ..bab import CmdResult
@@ -181,22 +182,20 @@ def apply_diff_to_text_using_patch(text, diff, err_file_path):
         tmp_file_path = f_obj.name
         f_obj.write(text)
     patch_cmd = ["patch", "--merge", "--force", "-p1", "--batch", tmp_file_path]
-    result = runext.run_cmd(patch_cmd, input_text=str(diff).encode())
+    ecode, stdout, stderr = runext.run_cmd(patch_cmd, input_text=str(diff).encode())
     try:
         with open(tmp_file_path, "r") as f_obj:
             text = f_obj.read()
         os.remove(tmp_file_path)
     except FileNotFoundError:
         text = ""
-    # move all but the first line of stdout to stderr
-    # drop first line so that reports can be made relative to subdir
-    olines = result.stdout.splitlines(True)
     prefix = "{0}: ".format(err_file_path)
     # Put file name at start of line so they make sense on their own
-    if len(olines) > 1:
-        stderr = prefix + prefix.join(olines[1:] + result.stderr.splitlines(True))
-    elif result.stderr:
-        stderr = prefix + prefix.join(result.stderr.splitlines(True))
-    else:
-        stderr = ""
-    return CmdResult(result.ecode, text, stderr)
+    # move all but the first line of stdout to stderr
+    # drop first line so that reports can be made relative to subdir
+    stdout_lines = stdout.splitlines(True)
+    if len(stdout_lines) > 1 or len(stderr):
+        ecode = max(ecode, CmdResult.WARNING)
+    for line in stdout_lines[1:]  + stderr.splitlines(True):
+        rctx.stderr.write(prefix + line)
+    return (ecode, text)

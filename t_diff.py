@@ -20,6 +20,7 @@
 import collections
 import os
 import re
+import sys
 
 from . import a_diff
 from . import diffstat
@@ -365,7 +366,7 @@ class TextDiff(collections.namedtuple("TextDiff", ["diff_format", "header", "hun
         """
         return self.header.get_outcome()
 
-    def apply_to_file(self, file_path, err_file_path=None):
+    def apply_to_file(self, file_path, err_file_path=None, rctx=sys):
         """Apply this diff to the given file
         """
         from ..bab import CmdResult
@@ -379,13 +380,12 @@ class TextDiff(collections.namedtuple("TextDiff", ["diff_format", "header", "hun
         if adiff.first_mismatch_before(lines) == -1:
             new_text = "".join(adiff.apply_forwards(lines))
             ecode = CmdResult.OK
-            stderr = ""
         else:
             err_file_path = err_file_path if err_file_path else file_path
-            ecode, new_text, stderr = pd_utils.apply_diff_to_text_using_patch(text, self, err_file_path)
+            ecode, new_text = pd_utils.apply_diff_to_text_using_patch(text, self, err_file_path, rctx)
         if not new_text and self.header.after.path == "/dev/null":
             os.remove(file_path)
         else:
             with open(file_path, "w") as f_obj:
                 f_obj.write(new_text)
-        return CmdResult(ecode, "", stderr)
+        return ecode
