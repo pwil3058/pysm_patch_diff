@@ -370,22 +370,34 @@ class TextDiff(collections.namedtuple("TextDiff", ["diff_format", "header", "hun
         """Apply this diff to the given file
         """
         from ..bab import CmdResult
+        ecode = CmdResult.OK
         try:
             with open(file_path, "r") as f_obj:
                 text = f_obj.read()
         except FileNotFoundError:
+            if self.header.get_outcome() != DiffOutcome.CREATED:
+                rctx.stderr.write(_("{}: (expected) file not found.\n").format(err_file_path))
+                ecode = CmdResult.WARNING
             text = ""
+        except EnvironmentError as edata:
+            rctx.stderr.write("\"{0}\": {1}\n".format(err_file_path, edata))
+            return CmdResult.ERROR
         adiff = a_diff.AbstractDiff(self.hunks)
         lines = text.splitlines(True)
         if adiff.first_mismatch_before(lines) == -1:
             new_text = "".join(adiff.apply_forwards(lines))
-            ecode = CmdResult.OK
+            ecode = max(ecode, CmdResult.OK)
         else:
             err_file_path = err_file_path if err_file_path else file_path
-            ecode, new_text = pd_utils.apply_diff_to_text_using_patch(text, self, err_file_path, rctx)
-        if not new_text and self.header.after.path == "/dev/null":
-            os.remove(file_path)
-        else:
-            with open(file_path, "w") as f_obj:
-                f_obj.write(new_text)
+            pd_ecode, new_text = pd_utils.apply_diff_to_text_using_patch(text, self, err_file_path, rctx)
+            ecode = max(ecode, pd_ecode)
+        try:
+            if not new_text and self.header.after.path == "/dev/null":
+                os.remove(file_path)
+            else:
+                with open(file_path, "w") as f_obj:
+                    f_obj.write(new_text)
+        except EnvironmentError as edata:
+            rctx.stderr.write("\"{0}\": {1}\n".format(err_file_path, edata))
+            return CmdResult.ERROR
         return ecode
