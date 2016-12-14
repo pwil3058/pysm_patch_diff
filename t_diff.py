@@ -366,7 +366,7 @@ class TextDiff(collections.namedtuple("TextDiff", ["diff_format", "header", "hun
         """
         return self.header.get_outcome()
 
-    def apply_to_file(self, file_path, err_file_path=None, rctx=sys):
+    def apply_to_file(self, file_path, repd_file_path=None, rctx=sys, drop_atws=True):
         """Apply this diff to the given file
         """
         from ..bab import CmdResult
@@ -376,20 +376,29 @@ class TextDiff(collections.namedtuple("TextDiff", ["diff_format", "header", "hun
                 text = f_obj.read()
         except FileNotFoundError:
             if self.header.get_outcome() != DiffOutcome.CREATED:
-                rctx.stderr.write(_("{}: (expected) file not found.\n").format(err_file_path))
+                rctx.stderr.write(_("{}: (expected) file not found.\n").format(repd_file_path))
                 ecode = CmdResult.WARNING
             text = ""
         except EnvironmentError as edata:
-            rctx.stderr.write("\"{0}\": {1}\n".format(err_file_path, edata))
+            rctx.stderr.write("\"{0}\": {1}\n".format(repd_file_path, edata))
             return CmdResult.ERROR
+        if drop_atws:
+            atws_lines = self.fix_trailing_whitespace()
+            if atws_lines:
+                RCTX.stdout.write(_("\"{1}\": had added trailing white space at line(s) {{{1}}}: removed before application.\n").format(repd_file_path, ", ".join([str(line) for line in atws_lines])))
+        else:
+            atws_lines = self.report_trailing_whitespace()
+            if atws_lines:
+                ecode = CmdResult.WARNING
+                RCTX.stderr.write(_("Warning: \"{0}\": has added trailing white space at line(s) {{{2}}}.\n").format(repd_file_path, ", ".join([str(line) for line in atws_lines])))
         adiff = a_diff.AbstractDiff(self.hunks)
         lines = text.splitlines(True)
         if adiff.first_mismatch_before(lines) == -1:
             new_text = "".join(adiff.apply_forwards(lines))
             ecode = max(ecode, CmdResult.OK)
         else:
-            err_file_path = err_file_path if err_file_path else file_path
-            pd_ecode, new_text = pd_utils.apply_diff_to_text_using_patch(text, self, err_file_path, rctx)
+            repd_file_path = repd_file_path if repd_file_path else file_path
+            pd_ecode, new_text = pd_utils.apply_diff_to_text_using_patch(text, self, repd_file_path, rctx)
             ecode = max(ecode, pd_ecode)
         try:
             if not new_text and self.header.after.path == "/dev/null":
@@ -398,6 +407,6 @@ class TextDiff(collections.namedtuple("TextDiff", ["diff_format", "header", "hun
                 with open(file_path, "w") as f_obj:
                     f_obj.write(new_text)
         except EnvironmentError as edata:
-            rctx.stderr.write("\"{0}\": {1}\n".format(err_file_path, edata))
+            rctx.stderr.write("\"{0}\": {1}\n".format(repd_file_path, edata))
             return CmdResult.ERROR
         return ecode

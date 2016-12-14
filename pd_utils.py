@@ -173,7 +173,7 @@ def gen_strip_level_function(level):
     return lambda path: path if path.startswith(os.sep) else strip_n(path, level)
 
 
-def apply_diff_to_text_using_patch(text, diff, err_file_path, rctx=sys):
+def apply_diff_to_text_using_patch(text, diff, repd_file_path, rctx=sys):
     import tempfile
     from ..bab import runext
     from ..bab import CmdResult
@@ -189,7 +189,7 @@ def apply_diff_to_text_using_patch(text, diff, err_file_path, rctx=sys):
         os.remove(tmp_file_path)
     except FileNotFoundError:
         text = ""
-    prefix = "{0}: ".format(err_file_path)
+    prefix = "{0}: ".format(repd_file_path)
     # Put file name at start of line so they make sense on their own
     # move all but the first line of stdout to stderr
     # drop first line so that reports can be made relative to subdir
