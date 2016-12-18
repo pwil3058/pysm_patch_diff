@@ -38,6 +38,7 @@ _HUNK = collections.namedtuple("_HUNK", ["offset", "start", "length", "numlines"
 class ContextDiffHunk(t_diff.TextDiffHunk):
     """Class to encapsulate a single context diff hunk
     """
+    LEN_LINE_PREFIX = 2
     def _process_tws(self, fix=False):
         """If "fix" is True remove any trailing white space from
         changed lines and return a list of lines that were fixed

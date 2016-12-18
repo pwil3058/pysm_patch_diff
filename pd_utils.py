@@ -171,31 +171,3 @@ def gen_strip_level_function(level):
     if level == 0:
         return lambda path: path
     return lambda path: path if path.startswith(os.sep) else strip_n(path, level)
-
-
-def apply_diff_to_text_using_patch(text, diff, repd_file_path, rctx=sys):
-    import tempfile
-    from ..bab import runext
-    from ..bab import CmdResult
-    tmp_file_path = None
-    with tempfile.NamedTemporaryFile(mode="w", delete=False) as f_obj:
-        tmp_file_path = f_obj.name
-        f_obj.write(text)
-    patch_cmd = ["patch", "--merge", "--force", "-p1", "--batch", tmp_file_path]
-    ecode, stdout, stderr = runext.run_cmd(patch_cmd, input_text=str(diff).encode())
-    try:
-        with open(tmp_file_path, "r") as f_obj:
-            text = f_obj.read()
-        os.remove(tmp_file_path)
-    except FileNotFoundError:
-        text = ""
-    prefix = "{0}: ".format(repd_file_path)
-    # Put file name at start of line so they make sense on their own
-    # move all but the first line of stdout to stderr
-    # drop first line so that reports can be made relative to subdir
-    stdout_lines = stdout.splitlines(True)
-    if len(stdout_lines) > 1 or len(stderr):
-        ecode = max(ecode, CmdResult.WARNING)
-    for line in stdout_lines[1:]  + stderr.splitlines(True):
-        rctx.stderr.write(prefix + line)
-    return (ecode, text)

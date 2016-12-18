@@ -228,6 +228,7 @@ def generate_diff_lines(dlgf, before, after, num_context_lines=3):
 class TextDiffHunk(collections.namedtuple("TextDiffHunk", ["lines", "before", "after"])):
     """Class to encapsulate a single unified diff hunk
     """
+    LEN_LINE_PREFIX = 1
     def __str__(self):
         return "".join(self.lines)
 
@@ -259,17 +260,17 @@ class TextDiffHunk(collections.namedtuple("TextDiffHunk", ["lines", "before", "a
         """
         return self._process_tws(fix=False)
 
-    @staticmethod
-    def _iter_lines(lines, skip_if_starts_with=None):
+    @classmethod
+    def _iter_lines(cls, lines, skip_if_starts_with=None):
         """Iterate over lines skipping lines as directed
         """
         index = 1
         while index < len(lines):
             if skip_if_starts_with is None or not lines[index].startswith(skip_if_starts_with):
                 if (index + 1) == len(lines) or not lines[index + 1].startswith("\\"):
-                    yield lines[index][1:]
+                    yield lines[index][cls.LEN_LINE_PREFIX:]
                 else:
-                    yield lines[index][1:].rstrip(os.linesep + "\n")
+                    yield lines[index][cls.LEN_LINE_PREFIX:].rstrip(os.linesep + "\n")
             index += 1
             if index < len(lines) and lines[index].startswith("\\"):
                 index += 1
@@ -392,14 +393,9 @@ class TextDiff(collections.namedtuple("TextDiff", ["diff_format", "header", "hun
                 ecode = CmdResult.WARNING
                 RCTX.stderr.write(_("Warning: \"{0}\": has added trailing white space at line(s) {{{2}}}.\n").format(repd_file_path, ", ".join([str(line) for line in atws_lines])))
         adiff = a_diff.AbstractDiff(self.hunks)
-        lines = text.splitlines(True)
-        if adiff.first_mismatch_before(lines) == -1:
-            new_text = "".join(adiff.apply_forwards(lines))
-            ecode = max(ecode, CmdResult.OK)
-        else:
-            repd_file_path = repd_file_path if repd_file_path else file_path
-            pd_ecode, new_text = pd_utils.apply_diff_to_text_using_patch(text, self, repd_file_path, rctx)
-            ecode = max(ecode, pd_ecode)
+        t_ecode, new_lines = adiff.apply_forwards(text.splitlines(True), rctx, repd_file_path)
+        ecode = max(ecode, t_ecode)
+        new_text = "".join(new_lines)
         try:
             if not new_text and self.header.after.path == "/dev/null":
                 os.remove(file_path)
