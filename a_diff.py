@@ -96,31 +96,17 @@ class AbstractChunk(namedtuple("AbstractChunk", ["start_index", "lines"])):
         return find_last_sub_lines(lines, self.lines)
 
 
-class AbstractHunk(namedtuple("AbstractHunk", ["before", "after"])):
+class AbstractHunk(namedtuple("AbstractHunk", ["before", "after", "pre_cntxt_len", "post_cntxt_len"])):
     """Class to encapsulate a single chunk of an abstract diff
     """
-    @property
-    def pre_cntxt_len(self):
-        """Number of lines of context at start of this hunk
-        """
-        return first_inequality_fm_head(self.before.lines, self.after.lines)
-
-    @property
-    def post_cntxt_len(self):
-        """Number of lines of context at end of this hunk
-        """
-        return abs(first_inequality_fm_tail(self.before.lines, self.after.lines)) - 1
-
     def get_before_compromised_posn(self, lines, offset=0, fuzz_factor=2):
         """If it exists find the position in "lines" where this hunk will
         apply reducing context if/as necessary.  Return the position
         and any context reductions that were used.
         """
-        pre_cntxt_len = first_inequality_fm_head(self.before.lines, self.after.lines)
-        post_cntxt_len = abs(first_inequality_fm_tail(self.before.lines, self.after.lines)) - 1
-        for context_redn in range(min(fuzz_factor, max(pre_cntxt_len, post_cntxt_len)) + 1):
-            pre_context_redn = min(context_redn, pre_cntxt_len)
-            post_context_redn = min(context_redn, post_cntxt_len)
+        for context_redn in range(min(fuzz_factor, max(self.pre_cntxt_len, self.post_cntxt_len)) + 1):
+            pre_context_redn = min(context_redn, self.pre_cntxt_len)
+            post_context_redn = min(context_redn, self.post_cntxt_len)
             fm = pre_context_redn if pre_context_redn else None
             to = -post_context_redn if post_context_redn else None
             start_index = find_first_sub_lines(lines, self.before.lines[fm:to], offset)
@@ -175,10 +161,10 @@ class AbstractDiff:
             m_hunk = self._hunks[first_mismatch]
             alt_start_index, pre_context_redn, post_context_redn = m_hunk.get_before_compromised_posn(lines, lines_index)
             if alt_start_index is None:
-                # TODO: handle case where hunk already applied
+                # TODO: handle case where hunk is already applied
                 ecode = max(ecode, CmdResult.ERROR)
                 before_hlen = len(m_hunk.before.lines) - m_hunk.post_cntxt_len
-                if (m_hunk.before.start_index + current_offset + before_hlen) >= len(lines):
+                if (m_hunk.before.start_index + current_offset + before_hlen) > len(lines):
                     # We've run out of lines to patch
                     rctx.stderr.write(_("{}: Unexpected end of file: ").format(repd_file_path))
                     if (len(self._hunks) - num_hunks_done) > 1:

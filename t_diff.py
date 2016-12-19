@@ -300,7 +300,9 @@ class TextDiffHunk(collections.namedtuple("TextDiffHunk", ["lines", "before", "a
         b_start_index = (self.before.start - 1) if len(b_lines) else self.before.start
         before = a_diff.AbstractChunk(b_start_index, b_lines)
         after = a_diff.AbstractChunk(self.after.start - 1, list(self.iter_after_lines()))
-        return a_diff.AbstractHunk(before, after)
+        pre_context_len = a_diff.first_inequality_fm_head(before.lines, after.lines)
+        post_context_len = abs(a_diff.first_inequality_fm_tail(before.lines, after.lines)) - 1
+        return a_diff.AbstractHunk(before, after, pre_context_len, post_context_len)
 
 class TextDiff(collections.namedtuple("TextDiff", ["diff_format", "header", "hunks"])):
     """A class to encapsulate "text" diffs regardless of format.
