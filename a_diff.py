@@ -177,11 +177,19 @@ class AbstractDiff:
             if alt_start_index is None:
                 # TODO: handle case where hunk already applied
                 ecode = max(ecode, CmdResult.ERROR)
+                before_hlen = len(m_hunk.before.lines) - m_hunk.post_cntxt_len
+                if (m_hunk.before.start_index + current_offset + before_hlen) >= len(lines):
+                    # We've run out of lines to patch
+                    rctx.stderr.write(_("{}: Unexpected end of file: ").format(repd_file_path))
+                    if (len(self._hunks) - num_hunks_done) > 1:
+                        rctx.stderr.write(_("Hunks #{}-{} could NOT be applied.\n").format(num_hunks_done+1, len(self._hunks)))
+                    else:
+                        rctx.stderr.write(_("Hunk #{} could NOT be applied.\n").format(num_hunks_done+1))
+                    break
                 result += lines[lines_index:m_hunk.before.start_index + current_offset]
                 lines_index = m_hunk.before.start_index + current_offset
                 result += ["<<<<<<<\n"]
                 l1 = len(result)
-                before_hlen = len(m_hunk.before.lines) - m_hunk.post_cntxt_len
                 result += lines[lines_index:lines_index + before_hlen]
                 lines_index += before_hlen
                 result += ["=======\n"]

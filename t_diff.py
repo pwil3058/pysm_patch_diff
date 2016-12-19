@@ -241,7 +241,7 @@ class TextDiffHunk(collections.namedtuple("TextDiffHunk", ["lines", "before", "a
         otherwise return a list of changed lines that have tailing
         white space
         """
-        return list()
+        return list() if fix else []
 
     def get_diffstat_stats(self):
         """Return the "diffstat" statistics for this chunk
@@ -386,12 +386,12 @@ class TextDiff(collections.namedtuple("TextDiff", ["diff_format", "header", "hun
         if drop_atws:
             atws_lines = self.fix_trailing_whitespace()
             if atws_lines:
-                RCTX.stdout.write(_("\"{1}\": had added trailing white space at line(s) {{{1}}}: removed before application.\n").format(repd_file_path, ", ".join([str(line) for line in atws_lines])))
+                rctx.stdout.write(_("\"{1}\": had added trailing white space at line(s) {{{1}}}: removed before application.\n").format(repd_file_path, ", ".join([str(line) for line in atws_lines])))
         else:
             atws_lines = self.report_trailing_whitespace()
             if atws_lines:
                 ecode = CmdResult.WARNING
-                RCTX.stderr.write(_("Warning: \"{0}\": has added trailing white space at line(s) {{{2}}}.\n").format(repd_file_path, ", ".join([str(line) for line in atws_lines])))
+                rctx.stderr.write(_("Warning: \"{0}\": has added trailing white space at line(s) {{{2}}}.\n").format(repd_file_path, ", ".join([str(line) for line in atws_lines])))
         adiff = a_diff.AbstractDiff(self.hunks)
         t_ecode, new_lines = adiff.apply_forwards(text.splitlines(True), rctx, repd_file_path)
         ecode = max(ecode, t_ecode)
