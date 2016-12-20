@@ -96,6 +96,14 @@ class AbstractChunk(namedtuple("AbstractChunk", ["start_index", "lines"])):
         return find_last_sub_lines(lines, self.lines)
 
 
+class AppliedPosnData(namedtuple("AppliedPosnData", ["start_posn", "length"])):
+    def __str__(self):
+        if self.length > 1:
+            return "{}-{}".format(self.start_posn, self.start_posn + self.length - 1)
+        else:
+            return str(self.start_posn)
+
+
 class AbstractHunk(namedtuple("AbstractHunk", ["before", "after", "pre_cntxt_len", "post_cntxt_len"])):
     """Class to encapsulate a single chunk of an abstract diff
     """
@@ -113,6 +121,17 @@ class AbstractHunk(namedtuple("AbstractHunk", ["before", "after", "pre_cntxt_len
             if start_index is not None:
                 return (start_index, pre_context_redn, post_context_redn)
         return (None, None, None)
+
+    def get_before_applied_posn(self, end_posn, post_context_redn):
+        """Return the before applied position data for this hunk.
+        """
+        num_lines = len(self.after.lines) - self.pre_cntxt_len - self.post_cntxt_len
+        start_posn = end_posn - num_lines - (self.post_cntxt_len - post_context_redn) + 1
+        return AppliedPosnData(start_posn, num_lines)
+
+    def is_already_applied_forward(self, lines, offset):
+        fr_offset = self.before.start_index - self.after.start_index
+        return self.after.matches_lines(lines, fr_offset + offset)
 
 class AbstractDiff:
     """Class to encapsulate an abstract diff as a list of abstract hunks.
@@ -158,10 +177,21 @@ class AbstractDiff:
                 num_hunks_done += 1
             if first_mismatch is None:
                 break
+            ecode = max(ecode, CmdResult.WARNING)
             m_hunk = self._hunks[first_mismatch]
             alt_start_index, pre_context_redn, post_context_redn = m_hunk.get_before_compromised_posn(lines, lines_index)
-            if alt_start_index is None:
-                # TODO: handle case where hunk is already applied
+            if alt_start_index is not None:
+                result += lines[lines_index:alt_start_index]
+                result += m_hunk.after.lines[pre_context_redn:-post_context_redn if post_context_redn else None]
+                lines_index = alt_start_index + len(m_hunk.before.lines) - pre_context_redn - post_context_redn
+                current_offset = alt_start_index - m_hunk.before.start_index - pre_context_redn
+                rctx.stderr.write(_("{}: Hunk #{} merged at {}.\n").format(repd_file_path, first_mismatch + 1, m_hunk.get_before_applied_posn(len(result), post_context_redn)))
+            elif m_hunk.is_already_applied_forward(lines, current_offset):
+                result += lines[lines_index:m_hunk.after.start_index + current_offset + len(hunk.after.lines)]
+                lines_index = m_hunk.after.start_index + current_offset + len(hunk.after.lines)
+                current_offset += len(m_hunk.after.lines) - len(m_hunk.before.lines)
+                rctx.stderr.write(_("{}: Hunk #{} already applied at {}.\n").format(repd_file_path, first_mismatch + 1, m_hunk.get_before_applied_posn(len(result), 0)))
+            else:
                 ecode = max(ecode, CmdResult.ERROR)
                 before_hlen = len(m_hunk.before.lines) - m_hunk.post_cntxt_len
                 if (m_hunk.before.start_index + current_offset + before_hlen) > len(lines):
@@ -175,28 +205,14 @@ class AbstractDiff:
                 result += lines[lines_index:m_hunk.before.start_index + current_offset]
                 lines_index = m_hunk.before.start_index + current_offset
                 result += ["<<<<<<<\n"]
-                l1 = len(result)
+                start_line = len(result)
                 result += lines[lines_index:lines_index + before_hlen]
                 lines_index += before_hlen
                 result += ["=======\n"]
                 result += m_hunk.after.lines[:-m_hunk.post_cntxt_len if m_hunk.post_cntxt_len else None]
                 result += [">>>>>>>\n"]
-                l2 = len(result)
-                rctx.stderr.write(_("{}: Hunk #{} NOT MERGED at {}-{}.\n").format(repd_file_path, first_mismatch + 1, l1, l2))
-            else:
-                ecode = max(ecode, CmdResult.WARNING)
-                fm = pre_context_redn if pre_context_redn else None
-                to = -post_context_redn if post_context_redn else None
-                result += lines[lines_index:alt_start_index]
-                result += m_hunk.after.lines[fm:to]
-                lines_index = alt_start_index + len(m_hunk.before.lines) - pre_context_redn - post_context_redn
-                current_offset = alt_start_index - m_hunk.before.start_index - pre_context_redn
-                nnl = len(m_hunk.after.lines) - m_hunk.pre_cntxt_len - m_hunk.post_cntxt_len
-                sp = len(result) - nnl - (m_hunk.post_cntxt_len - post_context_redn) + 1
-                if nnl > 1:
-                    rctx.stderr.write(_("{}: Hunk #{} merged at {}-{}.\n").format(repd_file_path, first_mismatch + 1, sp, sp + nnl - 1))
-                else:
-                    rctx.stderr.write(_("{}: Hunk #{} merged at {}.\n").format(repd_file_path, first_mismatch + 1, sp))
+                end_line = len(result)
+                rctx.stderr.write(_("{}: Hunk #{} NOT MERGED at {}-{}.\n").format(repd_file_path, first_mismatch + 1, start_line, end_line))
             num_hunks_done += 1
         result += lines[lines_index:]
         return (ecode, result)
