@@ -246,7 +246,7 @@ class Patch:
         subject = msg.get("Subject")
         if subject:
             # email may have inapproriate newlines (and they play havoc with REs) so fix them
-            text = re.sub("\r\n", os.linesep, msg.get_payload())
+            text = re.sub("\r\n", "\n", msg.get_payload())
         else:
             text = msg.get_payload()
         patch = Patch.parse_text(text, num_strip_levels=num_strip_levels)
