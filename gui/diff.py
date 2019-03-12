@@ -205,7 +205,7 @@ class TextWidget(textview.Widget):
     def v_scrollbar(self):
         return self._scrolled_window.get_vscrollbar()
     def get_scrollbar_values(self):
-        return (self.h_scrollbar.get_value(), self.h_scrollbar.get_value())
+        return (self.h_scrollbar.get_value(), self.v_scrollbar.get_value())
     def set_scrollbar_values(self, values):
         self.h_scrollbar.set_value(values[0])
         self.v_scrollbar.set_value(values[1])
